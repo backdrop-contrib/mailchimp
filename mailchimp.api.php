@@ -73,7 +73,7 @@ function hook_mailchimp_api_key_alter(&$api_key, $context) {
  * Alter the entity options list on the automations entity form.
  *
  * @param array $entity_type_options
- *   The full list of Drupal entities.
+ *   The full list of Backdrop entities.
  * @param string $automation_entity_label
  *   The label for the automation entity, if it exists.
  */

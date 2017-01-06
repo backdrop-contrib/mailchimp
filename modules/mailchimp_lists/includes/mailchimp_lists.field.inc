@@ -65,7 +65,7 @@ function mailchimp_lists_field_settings_form($this_field, $instance, $has_data) 
              : 'No available MailChimp lists exist.';
     $warning .= ' Create a new list at !mc, then !cc.';
 
-    drupal_set_message(t(
+    backdrop_set_message(t(
         $warning,
         array(
           '!mc' => l(t('MailChimp'), 'https://admin.mailchimp.com'),
@@ -262,7 +262,7 @@ function _mailchimp_lists_field_instance_settings_validate($form, &$form_state) 
   // Store the new values in the form state.
   $instance = $form['#instance'];
   if (isset($form_state['values']['instance'])) {
-    $instance = drupal_array_merge_deep($instance, $form_state['values']['instance']);
+    $instance = backdrop_array_merge_deep($instance, $form_state['values']['instance']);
   }
   $form_state['mailchimp']['instance'] = $instance;
 }
@@ -467,7 +467,7 @@ function mailchimp_lists_field_formatter_view($entity_type, $entity, $field, $in
   // Display subscription form if accessible.
   if ($display['type'] == 'mailchimp_lists_field_subscribe' && $email && entity_access('edit', $entity_type, $entity)) {
     $field_form_id = 'mailchimp_lists_' . $field['field_name'] . '_form';
-    $element = drupal_get_form($field_form_id, $instance, $display['settings'], $entity, $field);
+    $element = backdrop_get_form($field_form_id, $instance, $display['settings'], $entity, $field);
   }
   else {
     if ($email) {

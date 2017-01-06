@@ -8,9 +8,10 @@
  * Returns a form for creating a campaign.
  */
 function mailchimp_campaign_campaign_form($form, &$form_state, MailChimpCampaign $campaign = NULL) {
-  $path = drupal_get_path('module', 'mailchimp_campaign');
-  drupal_add_js($path . '/js/mailchimp_campaign.utils.js', 'file');
-  drupal_add_css($path . '/mailchimp_campaign.css', 'file');
+  $path = backdrop_get_path('module', 'mailchimp_campaign');
+  backdrop_add_js($path . '/js/mailchimp_campaign.utils.js', 'file');
+  backdrop_add_css($path . '/mailchimp_campaign.css', 'file');
+  $site_mail = config_get('system.core', 'site_mail');
 
   $form_state['campaign'] = $campaign;
   $form['title'] = array(
@@ -75,7 +76,7 @@ function mailchimp_campaign_campaign_form($form, &$form_state, MailChimpCampaign
     '#type' => 'textfield',
     '#title' => t('From Email'),
     '#description' => t('the From: email address for your campaign message.'),
-    '#default_value' => ($campaign) ? $campaign->mc_data->settings->reply_to : variable_get('site_mail'),
+    '#default_value' => ($campaign) ? $campaign->mc_data->settings->reply_to : $site_mail,
     '#size' => 40,
     '#maxlength' => 255,
     '#required' => TRUE,
@@ -84,7 +85,7 @@ function mailchimp_campaign_campaign_form($form, &$form_state, MailChimpCampaign
     '#type' => 'textfield',
     '#title' => t('From Name'),
     '#description' => t('the From: name for your campaign message (not an email address)'),
-    '#default_value' => ($campaign) ? $campaign->mc_data->settings->from_name : variable_get('site_name'),
+    '#default_value' => ($campaign) ? $campaign->mc_data->settings->from_name : $site_mail,
     '#size' => 40,
     '#maxlength' => 255,
   );
@@ -135,7 +136,7 @@ function mailchimp_campaign_campaign_form($form, &$form_state, MailChimpCampaign
   if ($mc_template) {
     foreach ($mc_template->info->sections as $section => $content) {
       if (substr($section, 0, 6) == 'repeat') {
-        drupal_set_message(t('WARNING: This template has repeating sections, which are not supported. You may want to select a different template.'), 'warning');
+        backdrop_set_message(t('WARNING: This template has repeating sections, which are not supported. You may want to select a different template.'), 'warning');
       }
     }
     foreach ($mc_template->info->sections as $section => $content) {
@@ -149,14 +150,14 @@ function mailchimp_campaign_campaign_form($form, &$form_state, MailChimpCampaign
       }
       $form['content'][$section . '_wrapper'] = array(
         '#type' => 'fieldset',
-        '#title' => check_plain(drupal_ucfirst($section)),
+        '#title' => check_plain(backdrop_ucfirst($section)),
         '#collapsible' => TRUE,
         '#collapsed' => TRUE,
       );
       $form['content'][$section . '_wrapper'][$section] = array(
         '#type' => 'text_format',
         '#format' => $format,
-        '#title' => check_plain(drupal_ucfirst($section)),
+        '#title' => check_plain(backdrop_ucfirst($section)),
         '#default_value' => $default_value,
       );
 
@@ -234,11 +235,11 @@ function mailchimp_campaign_template_callback($form, $form_state) {
 function mailchimp_campaign_list_segment_callback($form, $form_state) {
   $commands = array();
 
-  $list_segment_html = drupal_render($form['list_segment_id']);
+  $list_segment_html = backdrop_render($form['list_segment_id']);
   $commands[] = ajax_command_replace('#list-segments-wrapper', $list_segment_html);
 
   if (isset($form['content']['html_wrapper']['merge_vars'])) {
-    $merge_vars_html = drupal_render($form['content']['html_wrapper']['merge_vars']);
+    $merge_vars_html = backdrop_render($form['content']['html_wrapper']['merge_vars']);
     $commands[] = ajax_command_replace('.merge-vars-wrapper', $merge_vars_html);
   }
 
@@ -452,8 +453,8 @@ function mailchimp_campaign_entity_type_callback($form, $form_state) {
   $entity_import_wrapper = $form_state['triggering_element']['#ajax']['wrapper'];
 
   $html = '<div id="' . $entity_import_wrapper . '" class="content-entity-lookup-wrapper">';
-  $html .= drupal_render($form['content'][$content_wrapper]['entity_import']['entity_id']);
-  $html .= drupal_render($form['content'][$content_wrapper]['entity_import']['entity_view_mode']);
+  $html .= backdrop_render($form['content'][$content_wrapper]['entity_import']['entity_id']);
+  $html .= backdrop_render($form['content'][$content_wrapper]['entity_import']['entity_view_mode']);
   $html .= '</div>';
 
   $commands[] = ajax_command_replace('#' . $entity_import_wrapper, $html);
@@ -619,7 +620,7 @@ function mailchimp_campaign_delete_form($form, &$form_state, MailChimpCampaign $
   return confirm_form($form,
     t('Are you sure you want to delete %name?', array('%name' => $campaign->label())),
     'admin/config/services/mailchimp/campaigns/' . $campaign->mc_campaign_id,
-    t('This action will delete both the MailChimp campaign and Drupal entity and cannot be undone.'),
+    t('This action will delete both the MailChimp campaign and Backdrop entity and cannot be undone.'),
     t('Delete campaign')
   );
 }
@@ -630,11 +631,11 @@ function mailchimp_campaign_delete_form($form, &$form_state, MailChimpCampaign $
 function mailchimp_campaign_delete_form_submit($form, &$form_state) {
   $campaign = $form_state['campaign'];
   if (mailchimp_campaign_delete_campaign($campaign->mc_campaign_id)) {
-    drupal_set_message(t('Campaign %name has been deleted.',
+    backdrop_set_message(t('Campaign %name has been deleted.',
         array('%name' => $campaign->label()))
     );
   }
-  drupal_goto('admin/config/services/mailchimp/campaigns');
+  backdrop_goto('admin/config/services/mailchimp/campaigns');
 }
 
 /**
@@ -656,10 +657,10 @@ function mailchimp_campaign_send_form($form, &$form_state, MailChimpCampaign $ca
 function mailchimp_campaign_send_form_submit($form, &$form_state) {
   $campaign = $form_state['campaign'];
   mailchimp_campaign_send_campaign($campaign);
-  drupal_set_message(t('Campaign %name has been sent.',
+  backdrop_set_message(t('Campaign %name has been sent.',
       array('%name' => $campaign->label()))
   );
-  drupal_goto('admin/config/services/mailchimp/campaigns');
+  backdrop_goto('admin/config/services/mailchimp/campaigns');
 }
 
 /**
@@ -695,8 +696,8 @@ function mailchimp_campaign_send_test_form_submit($form, &$form_state) {
   mailchimp_campaign_send_test_campaign($campaign, $recipients);
   $_SESSION['mailchimp_campaign_test'] = implode(', ', $recipients);
 
-  drupal_set_message(t('Campaign %name test message sent.',
+  backdrop_set_message(t('Campaign %name test message sent.',
       array('%name' => $campaign->label()))
   );
-  drupal_goto('admin/config/services/mailchimp/campaigns/' . $campaign->mc_campaign_id);
+  backdrop_goto('admin/config/services/mailchimp/campaigns/' . $campaign->mc_campaign_id);
 }

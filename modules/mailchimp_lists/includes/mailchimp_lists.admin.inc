@@ -50,7 +50,7 @@ function mailchimp_lists_overview_page() {
     array('query' => array('destination' => 'admin/config/services/mailchimp/lists')));
   if (empty($mc_lists)) {
     $table['caption'] = $refresh_link;
-    drupal_set_message(t('You don\'t have any lists configured in your MailChimp account, (or you haven\'t configured your API key correctly on the Global Settings tab). Head over to !link and create some lists, then come back here and click "Refresh lists from MailChimp"',
+    backdrop_set_message(t('You don\'t have any lists configured in your MailChimp account, (or you haven\'t configured your API key correctly on the Global Settings tab). Head over to !link and create some lists, then come back here and click "Refresh lists from MailChimp"',
       array('!link' => l(t('MailChimp'), 'https://admin.mailchimp.com/lists/'))), 'warning');
   }
   else {
@@ -100,7 +100,7 @@ function mailchimp_lists_fields_overview_page() {
   $table['caption'] = t("This displays a list of all MailChimp Subscription Fields configured on your system, with a row for each unique Instance of that field.
     To edit each field's settings, go to the Entity Bundle's configuration screen and use the Field UI.
     When entities with MailChimp Subscription Fields are updated, the Merge Variables configured through Field UI are automatically updated if necessary.
-    However, if you have existing subscribers on MailChimp and matching Entities on Drupal when you configure your Merge Variables, the existing values are not synced automatically,
+    However, if you have existing subscribers on MailChimp and matching Entities on Backdrop when you configure your Merge Variables, the existing values are not synced automatically,
     as this could be a slow process. You can manually force updates of all existing Merge Values to existing MailChimp subscribers for each field configuration using the 'Batch Update'
     option on this table. The MailChimp Subscription Field is provided by the MailChimp Lists (mailchimp_lists) module.<br/><br/>
     The following MailChimp Subscription Field instances were found:");
@@ -178,7 +178,7 @@ function mailchimp_lists_webhook_form_submit($form, &$form_state) {
 
   }
   if ($result) {
-    drupal_set_message(t('Webhooks for list "%name" have been %action.',
+    backdrop_set_message(t('Webhooks for list "%name" have been %action.',
       array(
         '%name' => $form_state['list']->name,
         '%action' => $form_state['action'] . 'd',
@@ -186,7 +186,7 @@ function mailchimp_lists_webhook_form_submit($form, &$form_state) {
     ));
   }
   else {
-    drupal_set_message(t('Unable to perform webhook action "%action" for list "%name".',
+    backdrop_set_message(t('Unable to perform webhook action "%action" for list "%name".',
       array(
         '%name' => $form_state['list']->name,
         '%action' => $form_state['action'],

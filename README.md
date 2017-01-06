@@ -1,3 +1,6 @@
+Mailchimp
+=========
+
 This module provides integration with the MailChimp email delivery service.
 While tools for sending email from your own server, like SimpleNews, are great,
 they lack the sophistication and ease of use of dedicated email providers like
@@ -27,53 +30,17 @@ Features
   * Subscription forms can be created as pages or as blocks, with one or more
     list subscriptions on a single form
   * Include merge fields & interest groups on anonymous subscription forms
-  * Create & send Mailchimp Campaigns from within Drupal, using Drupal entities
+  * Create & send Mailchimp Campaigns from within Backdrop, using Backdrop entities
     as content.
   * Display a history of Mailchimp email and subscription activity on a tab for
     any Entity with an email address.
 
 
-Upgrading from an Earlier Version
+Upgrading from Drupal
 --------------------------------------------------------------------------------
 
-The 7.x-2.x and 7.x-3.x branches will become unsupported as MailChimp phases out
-their API version 2.0 by the end of 2016. We recommend upgrading to 7.x-4.x, the
-branch that is using MailChimp's latest API: version 3.0.
-
-Upgrading from 7.x-3.x
---------------------------------------------------------------------------------
-
-  * Replace the MailChimp module on your web server with the most recent
-    7.x-4.x release
-
-  * Follow Installation Notes below
-
-  * Perform a database update
-    https://www.drupal.org/upgrade/running-update-php
-
-  * Perform a full cache clear
-    https://www.drupal.org/documentation/clearing-rebuilding-cache
-
-Upgrading from 7.x-2.x
---------------------------------------------------------------------------------
-
-  * Uninstall the MailChimp module
-
-  * Replace the MailChimp module on your web server with the most recent
-      7.x-4.x release
-
-  * Follow Installation Notes below
-
-  * Perform a full cache clear
-    https://www.drupal.org/documentation/clearing-rebuilding-cache
-
-Please note: The major structural change between 7.x-2.x and 7.x-4.x is the
-"Lists and Users" tab has been separated into three tabs "Fields", "Lists" and
-"SignUp Forms". You will find most of the user related configuration by creating
-a MailChimp field on the user account, here: admin/config/people/accounts/fields
-
-For more information, please visit the FAQ (https://www.drupal.org/node/2793241)
-
+  An upgrade path is provided from Drupal's version 7.x-4.7 and later. Please 
+  backup your database before attempting an upgrade.
 
 Installation Notes
 --------------------------------------------------------------------------------
@@ -83,7 +50,7 @@ Installation Notes
     mailchimp_lists module.
   * If you use a drush make workflow, see the example drush makefile:
     mailchimp.make.example.
-  * The MailChimp PHP library must exist in your Drupal installation.
+  * The MailChimp PHP library must exist in your Backdrop installation.
 
 MailChimp Library Installation
 --------------------------------------------------------------------------------
@@ -132,28 +99,8 @@ MailChimp Library Installation
       - Install Drush on your system if you haven't already:
         http://www.drush.org/en/master/
 
-      - Run Composer manager with Drush within your Drupal installation:
+      - Run Composer manager with Drush within your Backdrop installation:
         drush composer-manager update --no-dev
-
-
-    For MailChimp version 7.x-2.x and 7.x-3.x:
-
-      - Download version 2.0.6 of the v2 API library:
-        https://bitbucket.org/mailchimp/mailchimp-api-php/downloads
-
-      - Extract the library archive to libraries/mailchimp
-
-      - Ensure the directory structure looks like this:
-
-        - libraries/
-          - mailchimp/
-            - docs/
-            - src/
-              - Mailchimp.php
-              - Mailchimp/
-            - README.md
-            - composer.json
-
 
 Configuration
 --------------------------------------------------------------------------------
@@ -169,7 +116,7 @@ Configuration
 
   3. Copy your newly created API key and go to the
   [Mailchimp config](http://example.com/admin/config/services/mailchimp) page in
-  your Drupal site and paste it into the Mailchimp API Key field.
+  your Backdrop site and paste it into the Mailchimp API Key field.
 
   4. Batch limit - Maximum number of changes to process in a single cron run.
   Mailchimp suggest keeping this below 10000.
@@ -190,26 +137,24 @@ Submodules
     a Mailchimp Subscription field to your User bundle to allow Users to control
     their own subscriptions and subscribe during registration.
 
-  * mailchimp_campaigns: Create and send campaigns directly from Drupal, or just
+  * mailchimp_campaigns: Create and send campaigns directly from Backdrop, or just
     create them and use the Mailchimp UI to send them. Embed content from your
-    Drupal site by dropping in any Entity with a title and a View Mode
+    Backdrop site by dropping in any Entity with a title and a View Mode
     configured into any area of your email template.
 
   * mailchimp_activity: Display a tab on any entity with an email address
     showing the email, subscribe, and unsubscribe history for that email address
     on your Mailchimp account.
 
+LICENSE
+-------
 
-Related Modules
+This project is GPL v2 software. See the LICENSE.txt file in this directory for complete text.
+
+Credits and maintainers
 --------------------------------------------------------------------------------
 
-Mandrill
+The Drupal maintainers team https://www.drupal.org/project/mailchimp
 
-  * Mandrill is MailChimp's transactional email service. The module provides the
-    ability to send all site emails through Mandrill with reporting available
-    from within Drupal. Please refer to the project page for more details.
-  * http://drupal.org/project/mandrill
+Ported to Backdrop by docwilmot https://github.com/docwilmot
 
-MCC, an alternative campaign creation tool.
-
-  * http://drupal.org/project/mcc

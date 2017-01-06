@@ -5,7 +5,7 @@
  * MailChimpCampaign controller class.
  */
 
-class MailChimpCampaignController extends EntityAPIController {
+class MailChimpCampaignController extends EMWController {
 
   /**
    * Implement in order to attach MailChimp data to campaign entities.

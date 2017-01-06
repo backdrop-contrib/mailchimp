@@ -1,9 +1,11 @@
 name = MailChimp
 description = MailChimp email service integration.
 package = MailChimp
-core = 7.x
 php = 5.5
+backdrop = 1.x
+type = module
 
-files[] = includes/mailchimp_exception.inc
+dependencies[] = entity_metadata_wrapper
+dependencies[] = entity_ui
 
 configure = admin/config/services/mailchimp

@@ -1,4 +1,4 @@
-Synchronize Drupal entities with MailChimp lists and allow anyone with access to
+Synchronize Backdrop entities with MailChimp lists and allow anyone with access to
 edit entities (such as Users editing their own data) to subscribe, unsubscribe,
 and update membership information. This module requires the
 [Entity module](http://www.drupal.org/project/entity).
@@ -73,14 +73,14 @@ each list.
 
 What does this mean?
 When a user unsubscribes from a list or updates their profile through MailChimp
-rather than Drupal, MailChimp will trigger an event to update the user's cached
+rather than Backdrop, MailChimp will trigger an event to update the user's cached
 MailChimp member information. This will not update any of their merge field
 data, or any other Entity data: it just changes the cached information. This
-cached data means Drupal doesn't have to contact MailChimp every time it wants
+cached data means Backdrop doesn't have to contact MailChimp every time it wants
 to gather subscription data.
 
 In other words, this should be enabled if possible. Otherwise, you may be using
-innaccurate information in Drupal. It is also important to note that the webhook
+innaccurate information in Backdrop. It is also important to note that the webhook
 doesn't just clear cached data, but actually updates the cached data.
 
 *Note: You cannot test webhooks if developing locally, as the MailChimp system

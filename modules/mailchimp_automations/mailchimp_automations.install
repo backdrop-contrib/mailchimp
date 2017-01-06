@@ -31,14 +31,14 @@ function mailchimp_automations_schema() {
         'not null' => TRUE,
       ),
       'entity_type' => array(
-        'description' => 'The Drupal entity type (e.g. "node", "user").',
+        'description' => 'The Backdrop entity type (e.g. "node", "user").',
         'type' => 'varchar',
         'length' => 128,
         'not null' => TRUE,
         'default' => '',
       ),
       'bundle' => array(
-        'description' => 'The Drupal bundle (e.g. "page", "user")',
+        'description' => 'The Backdrop bundle (e.g. "page", "user")',
         'type' => 'varchar',
         'length' => 128,
         'not null' => TRUE,

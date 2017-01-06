@@ -35,7 +35,7 @@ function mailchimp_lists_menu() {
   );
   $items['admin/config/services/mailchimp/lists/%/webhook/%'] = array(
     'title' => t('Enable/disable Webhooks'),
-    'page callback' => 'drupal_get_form',
+    'page callback' => 'backdrop_get_form',
     'page arguments' => array('mailchimp_lists_webhook_form', 5, 7),
     'access callback' => 'mailchimp_apikey_ready_access',
     'access arguments' => array('administer mailchimp'),
@@ -43,7 +43,7 @@ function mailchimp_lists_menu() {
   );
   $items['admin/config/services/mailchimp/lists/update_mergevars/%/%/%'] = array(
     'title' => t('Mass Update Merge Variables'),
-    'page callback' => 'drupal_get_form',
+    'page callback' => 'backdrop_get_form',
     'page arguments' => array('mailchimp_lists_update_mergevars_form', 6, 7, 8),
     'access callback' => 'mailchimp_apikey_ready_access',
     'access arguments' => array('administer mailchimp'),
@@ -290,7 +290,7 @@ function mailchimp_lists_process_subscribe_form_choices($choices, $instance, $fi
 
     }
     if (empty($ret)) {
-      drupal_set_message(t('There was a problem with your newsletter signup.'), 'warning');
+      backdrop_set_message(t('There was a problem with your newsletter signup.'), 'warning');
     }
   }
 }
@@ -364,7 +364,7 @@ function _mailchimp_lists_subscription_has_changed($instance, $field, $entity, $
  */
 function _mailchimp_lists_mergevars_populate($mergefields, $entity, $entity_type) {
   $mergevars = mailchimp_mergevars_populate($mergefields, $entity, $entity_type);
-  drupal_alter('mailchimp_lists_mergevars', $mergevars, $entity, $entity_type);
+  backdrop_alter('mailchimp_lists_mergevars', $mergevars, $entity, $entity_type);
   return $mergevars;
 }
 
@@ -408,7 +408,7 @@ function mailchimp_lists_get_subscribers($field, &$context) {
     $context['results']['subscribers'] = array();
     $context['sandbox']['progress'] = 0;
   }
-  $batch_size = variable_get('mailchimp_batch_limit', 100);
+  $batch_size = config_get('mailchimp.settings', 'batch_limit');
   $options = array(
     'offset' => $context['sandbox']['progress'] / $batch_size,
     'count' => $batch_size,
@@ -447,7 +447,7 @@ function mailchimp_lists_populate_member_batch($entity_type, $bundle_name, $fiel
     }
   }
   if ($context['sandbox']['progress'] < $context['sandbox']['max']) {
-    $batch_size = variable_get('mailchimp_batch_limit', 100);
+    $batch_size = config_get('mailchimp.settings', 'batch_limit');
     $item_ids = array_slice($context['sandbox']['entity_ids'], $context['sandbox']['progress'], $batch_size);
     $entities = entity_load($entity_type, $item_ids);
     foreach ($entities as $entity) {
@@ -483,7 +483,7 @@ function mailchimp_lists_execute_mergevar_batch_update($list_id, &$context) {
     $context['results']['errors'] = 0;
   }
   if ($context['sandbox']['progress'] < $context['sandbox']['total']) {
-    $batch_size = variable_get('mailchimp_batch_limit', 100);
+    $batch_size = config_get('mailchimp.settings', 'batch_limit');
     $batch = array_slice($context['results']['update_queue'], $context['sandbox']['progress'], $batch_size);
     $result = mailchimp_batch_update_members($list_id, $batch, FALSE, TRUE, FALSE);
     if ($result) {
@@ -511,7 +511,7 @@ function mailchimp_lists_execute_mergevar_batch_update($list_id, &$context) {
 function mailchimp_lists_populate_member_batch_complete($success, $results, $operations) {
   if ($success) {
     if ($results['errors']) {
-      drupal_set_message(t('Update errors occurred: merge variables updated on %count records, errors occurred on %errors records.',
+      backdrop_set_message(t('Update errors occurred: merge variables updated on %count records, errors occurred on %errors records.',
         array(
           '%count' => $results['updates'],
           '%errors' => $results['errors'],
@@ -519,7 +519,7 @@ function mailchimp_lists_populate_member_batch_complete($success, $results, $ope
       ), 'warning');
     }
     else {
-      drupal_set_message(t('Merge variables updated on %count records.',
+      backdrop_set_message(t('Merge variables updated on %count records.',
         array(
           '%count' => $results['updates'],
         )
@@ -527,7 +527,7 @@ function mailchimp_lists_populate_member_batch_complete($success, $results, $ope
     }
   }
   else {
-    drupal_set_message(t('Merge variable update failed.'), 'error');
+    backdrop_set_message(t('Merge variable update failed.'), 'error');
   }
 }
 
@@ -559,7 +559,7 @@ function mailchimp_lists_mollom_form_info($form_id) {
 }
 
 /**
- * Get an array with all possible Drupal properties for a given entity type.
+ * Get an array with all possible Backdrop properties for a given entity type.
  *
  * @param string $entity_type
  *   Name of entity whose properties to list.
@@ -663,7 +663,7 @@ function mailchimp_lists_add_to_segment_action($entity, $context = array()) {
   // Send to MailChimp in a batch when we are done, or when we reach 10000, as
   // 10000 records is the maximum batch size MailChimp recommends.
   if ($context['progress']['current'] == $context['progress']['total'] || !($context['progress']['current'] % 10000)) {
-    $batch_queue = DrupalQueue::get($queue_id);
+    $batch_queue = BackdropQueue::get($queue_id);
     $batch_queue->createQueue();
     $queue_count = $batch_queue->numberOfItems();
     if ($queue_count > 0) {

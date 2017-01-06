@@ -15,7 +15,7 @@ and viewing statistics on those already sent.
   campaign
 3. Click Save as draft
 
-Once saved as a draft, the new campaign will be available in both Drupal and
+Once saved as a draft, the new campaign will be available in both Backdrop and
 MailChimp as a draft until it is sent. After sending, campaigns can no longer
 be edited.
 
@@ -38,7 +38,7 @@ the token manually into the editing region.
 
 ## Troubleshooting
 ### Campaigns, lists, or templates have not updated from MailChimp?
-  Try clearing the Drupal cache and reloading the page.
+  Try clearing the Backdrop cache and reloading the page.
 ### Cannot edit a campaign?
   Check to see if the campaign has already been sent. Sent campaigns cannot be
   edited.

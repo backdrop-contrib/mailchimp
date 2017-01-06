@@ -61,7 +61,7 @@ function mailchimp_campaign_menu() {
   $items['admin/config/services/mailchimp/campaigns/add'] = array(
     'title' => t('Add a Campaign'),
     'description' => t('Add a new MailChimp campaign.'),
-    'page callback' => 'drupal_get_form',
+    'page callback' => 'backdrop_get_form',
     'page arguments' => array('mailchimp_campaign_campaign_form'),
     'access callback' => 'mailchimp_apikey_ready_access',
     'access arguments' => array('administer mailchimp campaigns'),
@@ -83,7 +83,7 @@ function mailchimp_campaign_menu() {
   );
   $items['admin/config/services/mailchimp/campaigns/%mailchimp_campaign/send'] = array(
     'title' => t('Send'),
-    'page callback' => 'drupal_get_form',
+    'page callback' => 'backdrop_get_form',
     'page arguments' => array('mailchimp_campaign_send_form', 5),
     'access callback' => 'mailchimp_campaign_access',
     'access arguments' => array(5, FALSE),
@@ -93,7 +93,7 @@ function mailchimp_campaign_menu() {
   );
   $items['admin/config/services/mailchimp/campaigns/%mailchimp_campaign/send-test'] = array(
     'title' => 'Send Test',
-    'page callback' => 'drupal_get_form',
+    'page callback' => 'backdrop_get_form',
     'page arguments' => array('mailchimp_campaign_send_test_form', 5),
     'access callback' => 'mailchimp_campaign_access',
     'access arguments' => array(5, FALSE),
@@ -104,7 +104,7 @@ function mailchimp_campaign_menu() {
   $items['admin/config/services/mailchimp/campaigns/%mailchimp_campaign/edit'] = array(
     'title' => t('Edit'),
     'description' => t('Edit a MailChimp campaign.'),
-    'page callback' => 'drupal_get_form',
+    'page callback' => 'backdrop_get_form',
     'page arguments' => array('mailchimp_campaign_campaign_form', 5),
     'access callback' => 'mailchimp_campaign_access',
     'access arguments' => array(5, FALSE),
@@ -114,7 +114,7 @@ function mailchimp_campaign_menu() {
   );
   $items['admin/config/services/mailchimp/campaigns/%mailchimp_campaign/delete'] = array(
     'title' => t('Delete'),
-    'page callback' => 'drupal_get_form',
+    'page callback' => 'backdrop_get_form',
     'page arguments' => array('mailchimp_campaign_delete_form', 5),
     'access callback' => 'mailchimp_campaign_access',
     'access arguments' => array(5, FALSE),
@@ -171,7 +171,7 @@ function mailchimp_campaign_entities_autocomplete_callback($type, $string = '') 
     }
   }
 
-  drupal_json_output($entities);
+  backdrop_json_output($entities);
 }
 
 /**
@@ -285,7 +285,7 @@ function mailchimp_campaign_theme($existing, $type, $theme, $path) {
 }
 
 /**
- * Save a campaign in MailChimp and as a Drupal entity.
+ * Save a campaign in MailChimp and as a Backdrop entity.
  *
  * @param array $template
  *   Associative array of template content indexed by section IDs.
@@ -303,7 +303,7 @@ function mailchimp_campaign_theme($existing, $type, $theme, $path) {
  */
 function mailchimp_campaign_save_campaign($template, $recipients, $settings, $template_id, $campaign_id = NULL) {
   // Allow alter of template and options used in campaign
-  drupal_alter('mailchimp_campaign', $recipients, $template, $campaign_id);
+  backdrop_alter('mailchimp_campaign', $recipients, $template, $campaign_id);
 
   // Convert template to content by running through formatter.
   if (isset($template['html'])) {
@@ -356,7 +356,7 @@ function mailchimp_campaign_save_campaign($template, $recipients, $settings, $te
       }
     }
     catch (Exception $e) {
-      drupal_set_message($e->getMessage(), 'error');
+      backdrop_set_message($e->getMessage(), 'error');
       watchdog('mailchimp_campaign', 'An error occurred while creating this campaign: %message', array(
         '%message' => $e->getMessage(),
         ), WATCHDOG_ERROR);
@@ -379,7 +379,7 @@ function mailchimp_campaign_save_campaign($template, $recipients, $settings, $te
       }
     }
     catch (Exception $e) {
-      drupal_set_message($e->getMessage(), 'error');
+      backdrop_set_message($e->getMessage(), 'error');
       watchdog('mailchimp_campaign', 'An error occurred while updating this campaign: %message', array(
         '%message' => $e->getMessage(),
         ), WATCHDOG_ERROR);
@@ -389,7 +389,7 @@ function mailchimp_campaign_save_campaign($template, $recipients, $settings, $te
   }
 
   if (!empty($result->id)) {
-    drupal_set_message(t('Campaign %name (%cid) was successfully saved.',
+    backdrop_set_message(t('Campaign %name (%cid) was successfully saved.',
       array('%name' => $settings->title, '%cid' => $campaign_id)));
 
     // Save the campaign entity:
@@ -437,7 +437,7 @@ function mailchimp_campaign_send_campaign(MailChimpCampaign $campaign) {
     }
   }
   catch (Exception $e) {
-    drupal_set_message($e->getMessage(), 'error');
+    backdrop_set_message($e->getMessage(), 'error');
     watchdog('mailchimp_campaign', 'An error occurred while sending to this campaign: %message', array(
       'message' => $e->getMessage(),
       ), WATCHDOG_ERROR);
@@ -469,7 +469,7 @@ function mailchimp_campaign_send_test_campaign(MailChimpCampaign $campaign, $rec
     return TRUE;
   }
   catch (Exception $e) {
-    drupal_set_message($e->getMessage(), 'error');
+    backdrop_set_message($e->getMessage(), 'error');
     watchdog('mailchimp_campaign', 'An error occurred while sending a test of this campaign: %message', array(
       '%message' => $e->getMessage(),
       ), WATCHDOG_ERROR);
@@ -502,7 +502,7 @@ function mailchimp_campaign_delete_campaign($cid) {
     return TRUE;
   }
   catch (Exception $e) {
-    drupal_set_message($e->getMessage(), 'error');
+    backdrop_set_message($e->getMessage(), 'error');
     watchdog('mailchimp_campaign', 'An error occurred while deleting this campaign: %message', array(
       '%message' => $e->getMessage(),
       ), WATCHDOG_ERROR);
@@ -699,10 +699,10 @@ function mailchimp_campaign_process_callback($matches = array()) {
   $entities = entity_load($entity_type, array($entity_id));
   if (!empty($entities)) {
     // Prevent session information from being rendered.
-    drupal_save_session(FALSE);
+    backdrop_save_session(FALSE);
     // Force the current user to anonymous to prevent access bypass.
     $original_user = $GLOBALS['user'];
-    $GLOBALS['user'] = drupal_anonymous_user();
+    $GLOBALS['user'] = backdrop_anonymous_user();
     // Render the entity.
     $render_array = entity_view($entity_type, $entities, $view_mode, NULL, TRUE);
     // Remove contextual links.
@@ -710,7 +710,7 @@ function mailchimp_campaign_process_callback($matches = array()) {
     $content = render($render_array);
     // Restore the user.
     $GLOBALS['user'] = $original_user;
-    drupal_save_session(TRUE);
+    backdrop_save_session(TRUE);
   }
 
   return $content;
@@ -761,7 +761,7 @@ function mailchimp_campaign_stats_page(MailChimpCampaign $campaign) {
     $result = $mc_reports->getCampaignSummary($campaign->mc_campaign_id);
   }
   catch (Exception $e) {
-    drupal_set_message($e->getMessage(), 'error');
+    backdrop_set_message($e->getMessage(), 'error');
     watchdog('mailchimp_campaign', 'An error occurred getting report data from MailChimp: %message', array(
       '%message' => $e->getMessage(),
       ), WATCHDOG_ERROR);
@@ -781,14 +781,14 @@ function mailchimp_campaign_stats_page(MailChimpCampaign $campaign) {
     $rows[] = array(
       'data' => array(
         array(
-          'data' => '<strong>' . drupal_ucfirst(str_replace('_', ' ', $group)) . '</strong>',
+          'data' => '<strong>' . backdrop_ucfirst(str_replace('_', ' ', $group)) . '</strong>',
           'colspan' => 2,
         ),
       ),
     );
 
     foreach ($result->{$group} as $key => $stat) {
-      $rows[] = array($key, drupal_ucfirst(str_replace('_', ' ', $stat)));
+      $rows[] = array($key, backdrop_ucfirst(str_replace('_', ' ', $stat)));
     }
   }
 
@@ -810,7 +810,7 @@ function mailchimp_campaign_stats_page(MailChimpCampaign $campaign) {
           'data' => 'https://www.google.com/jsapi',
           'type' => 'external',
         ),
-        drupal_get_path('module', 'mailchimp_campaign') . '/js/mailchimp_campaign.js',
+        backdrop_get_path('module', 'mailchimp_campaign') . '/js/mailchimp_campaign.js',
         array(
           'data' => $settings,
           'type' => 'setting',
@@ -894,7 +894,7 @@ function mailchimp_campaign_get_campaigns($campaign_ids, $reset = FALSE) {
       }
     }
     catch (Exception $e) {
-      drupal_set_message($e->getMessage(), 'error');
+      backdrop_set_message($e->getMessage(), 'error');
       watchdog('mailchimp_campaign', 'An error occurred while getting campaigns: %message', array(
         '%message' => $e->getMessage(),
         ), WATCHDOG_ERROR);
@@ -937,7 +937,7 @@ function mailchimp_campaign_get_list_segments($list_id, $type) {
     return $response->segments;
   }
   catch (Exception $e) {
-    drupal_set_message($e->getMessage(), 'error');
+    backdrop_set_message($e->getMessage(), 'error');
     watchdog('mailchimp_campaign', 'An error occurred getting list segments for list ID %list_id: %message', array(
       '%list_id' => $list_id,
       '%message' => $e->getMessage(),
@@ -971,7 +971,7 @@ function mailchimp_test_list_segment($list_id, $list_segment_id) {
     return $result->total_items;
   }
   catch (Exception $e) {
-    drupal_set_message($e->getMessage(), 'error');
+    backdrop_set_message($e->getMessage(), 'error');
     watchdog('mailchimp_campaign', 'An error occurred testing a list segment: %message', array(
       '%message' => $e->getMessage(),
       ), WATCHDOG_ERROR);
@@ -1037,4 +1037,14 @@ function mailchimp_campaign_delete_multiple($campaign_ids) {
  */
 function mailchimp_campaign_view($campaign) {
   return $campaign->view();
+}
+
+/**
+* Implements hook_autoload_info().
+*/
+function mailchimp_campaign_autoload_info() {
+  return array(
+  'MailChimpCampaignController' => 'includes\mailchimp_campaign.controller.inc',
+  'MailChimpCampaign' => 'includes\mailchimp_campaign.entity.inc',
+  );
 }

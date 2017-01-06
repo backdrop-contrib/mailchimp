@@ -38,11 +38,11 @@ function mailchimp_activity_entity_form($form, &$form_state, MailchimpActivityEn
     '#weight' => -9,
   );
 
-  $form['drupal_entity'] = array(
-    '#title' => t('Drupal entity'),
+  $form['backdrop_entity'] = array(
+    '#title' => t('Backdrop entity'),
     '#type' => 'fieldset',
     '#attributes' => array(
-      'id' => array('mailchimp-activity-drupal-entity'),
+      'id' => array('mailchimp-activity-backdrop-entity'),
     ),
     '#weight' => -8,
   );
@@ -55,7 +55,7 @@ function mailchimp_activity_entity_form($form, &$form_state, MailchimpActivityEn
     }
   }
   asort($entity_types);
-  $form['drupal_entity']['entity_type'] = array(
+  $form['backdrop_entity']['entity_type'] = array(
     '#title' => t('Entity type'),
     '#type' => 'select',
     '#options' => $entity_types,
@@ -64,7 +64,7 @@ function mailchimp_activity_entity_form($form, &$form_state, MailchimpActivityEn
     '#description' => t('Select an entity type to enable mailchimp history on.'),
     '#ajax' => array(
       'callback' => 'mailchimp_activity_mapping_form_callback',
-      'wrapper' => 'mailchimp-activity-drupal-entity',
+      'wrapper' => 'mailchimp-activity-backdrop-entity',
     ),
     '#weight' => -8,
   );
@@ -81,17 +81,17 @@ function mailchimp_activity_entity_form($form, &$form_state, MailchimpActivityEn
       $bundles[$key] = $bundle['label'];
     }
     asort($bundles);
-    $form['drupal_entity']['bundle'] = array(
+    $form['backdrop_entity']['bundle'] = array(
       '#title' => t('Entity bundle'),
       '#type' => 'select',
       '#required' => TRUE,
-      '#description' => t('Select a Drupal entity bundle with an email address to report on.'),
+      '#description' => t('Select a Backdrop entity bundle with an email address to report on.'),
       '#options' => $bundles,
       '#default_value' => $entitynotnull ? $mailchimp_activity_entity->bundle : 0,
       '#weight' => -7,
       '#ajax' => array(
         'callback' => 'mailchimp_activity_mapping_form_callback',
-        'wrapper' => 'mailchimp-activity-drupal-entity',
+        'wrapper' => 'mailchimp-activity-backdrop-entity',
       ),
     );
 
@@ -102,7 +102,7 @@ function mailchimp_activity_entity_form($form, &$form_state, MailchimpActivityEn
     if ($form_bundle) {
       // Prep the field & properties list before creating the form item:
       $fields = mailchimp_activity_email_fieldmap_options($form_entity_type, $form_bundle);
-      $form['drupal_entity']['email_property'] = array(
+      $form['backdrop_entity']['email_property'] = array(
         '#title' => t('Email Property'),
         '#type' => 'select',
         '#required' => TRUE,
@@ -134,7 +134,7 @@ function mailchimp_activity_entity_form($form, &$form_state, MailchimpActivityEn
  * Ajax callback for mailchimp_activity_mapping_form().
  */
 function mailchimp_activity_mapping_form_callback($form, &$form_state) {
-  return $form['drupal_entity'];
+  return $form['backdrop_entity'];
 }
 
 /**
@@ -192,7 +192,7 @@ function mailchimp_activity_entity_form_submit($form, &$form_state) {
 }
 
 /**
- * Return all possible Drupal properties for a given entity type.
+ * Return all possible Backdrop properties for a given entity type.
  *
  * @param string $entity_type
  *   Name of entity whose properties to list.

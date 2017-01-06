@@ -9,20 +9,21 @@
  * Return the MailChimp global settings form.
  */
 function mailchimp_admin_settings() {
-  $form['mailchimp_api_key'] = array(
+  $config = config('mailchimp.settings');
+  $form['api_key'] = array(
     '#type' => 'textfield',
     '#title' => t('MailChimp API Key'),
     '#required' => TRUE,
-    '#default_value' => variable_get('mailchimp_api_key', ''),
+    '#default_value' => $config->get('api_key'),
     '#description' => t('The API key for your MailChimp account. Get or generate a valid API key at your !apilink.', array('!apilink' => l(t('MailChimp API Dashboard'), 'http://admin.mailchimp.com/account/api'))),
   );
-  $form['mailchimp_cron'] = array(
+  $form['cron'] = array(
     '#type' => 'checkbox',
     '#title' => t('Use batch processing.'),
     '#description' => t('Puts all MailChimp subscription operations into the cron queue. (Includes subscribe, update, and unsubscribe operations.) <i>Note: May cause confusion if caches are cleared, as requested changes will appear to have failed until cron is run.</i>'),
-    '#default_value' => variable_get('mailchimp_cron', FALSE),
+    '#default_value' => $config->get('cron'),
   );
-  $form['mailchimp_batch_limit'] = array(
+  $form['batch_limit'] = array(
     '#type' => 'select',
     '#options' => array(
       '1' => '1',
@@ -42,12 +43,29 @@ function mailchimp_admin_settings() {
     ),
     '#title' => t('Batch limit'),
     '#description' => t('Maximum number of entities to process in a single cron run. MailChimp suggest keeping this at 5000 or below. <i>This value is also used for batch Merge Variable updates on the Fields tab (part of mailchimp_lists).</i>'),
-    '#default_value' => variable_get('mailchimp_batch_limit', 100),
+    '#default_value' => $config->get('batch_limit'),
   );
 
-  return system_settings_form($form);
+  $form['actions'] = array('#type' => 'actions');
+  $form['actions']['submit'] = array(
+    '#type' => 'submit',
+    '#submit' => array('mailchimp_admin_settings_submit'),
+    '#value' => t('Save configuration'),
+  );
+  return $form;
 }
 
+/**
+ * Submit handler for the MailChimp global settings form.
+ */
+function mailchimp_admin_settings_submit($form, &$form_state) {
+  $config = config('mailchimp.settings');
+  $config->set('api_key', $form_state['values']['api_key']);
+  $config->set('cron', $form_state['values']['cron']);
+  $config->set('batch_limit', $form_state['values']['batch_limit']);
+  $config->save();
+  backdrop_set_message(t('Configuration saved'));
+}
 /**
  * MailChimp List cache clear form.
  */
@@ -66,5 +84,5 @@ function mailchimp_clear_list_cache_form($form, &$form_state) {
  */
 function mailchimp_clear_list_cache_form_submit($form, &$form_state) {
   mailchimp_get_lists(array(), TRUE);
-  drupal_set_message(t('MailChimp List cache cleared.'));
+  backdrop_set_message(t('MailChimp List cache cleared.'));
 }

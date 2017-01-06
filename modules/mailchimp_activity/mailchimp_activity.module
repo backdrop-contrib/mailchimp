@@ -13,7 +13,7 @@ function mailchimp_activity_entity_info() {
     'mailchimp_activity_entity' => array(
       'label' => t('MailChimp Activity Entity'),
       'plural label' => t('MailChimp Activity Entities'),
-      'controller class' => 'EntityAPIControllerExportable',
+      'controller class' => 'EMWController',
       'entity class' => 'MailchimpActivityEntity',
       'base table' => 'mailchimp_activity_entity',
       'uri callback' => 'entity_class_uri',
@@ -95,7 +95,14 @@ function mailchimp_activity_access(MailchimpActivityEntity $mailchimp_activity_e
  *   Array of MailchimpActivityEntity instances or one instance if $name is set.
  */
 function mailchimp_activity_load_entities($name = NULL) {
-  $types = entity_load_multiple_by_name('mailchimp_activity_entity', isset($name) ? array($name) : FALSE);
+  // $types = entity_load_multiple_by_name('mailchimp_activity_entity', isset($name) ? array($name) : FALSE);
+  $names = isset($name) ? array($name) : FALSE;
+  $entities = entity_load('mailchimp_activity_entity', $names);
+  $info = entity_get_info($entity_type);
+  if (!isset($info['entity keys']['name'])) {
+    return $entities;
+  }
+  $types = entity_key_array_by_property($entities, $info['entity keys']['name']);
   return isset($name) ? reset($types) : $types;
 }
 
@@ -141,7 +148,7 @@ function mailchimp_activity_get_member_activity($list_id, $email, $reset = FALSE
       }
     }
     catch (Exception $e) {
-      drupal_set_message($e->getMessage(), 'error');
+      backdrop_set_message($e->getMessage(), 'error');
       watchdog('mailchimp_activity', 'An error occurred while getting activity for email "%email": %message', array(
         '%email' => $email,
         '%message' => $e->getMessage(),
@@ -169,12 +176,12 @@ function mailchimp_activity_page($entity, MailchimpActivityEntity $mailchimp_act
   $email_property = $mailchimp_activity_entity->email_property;
   $email_property_array = explode(':', $email_property);
   $parent = $entity_wrapper;
-  foreach ($email_property_array as $drupal_field) {
+  foreach ($email_property_array as $backdrop_field) {
     if ($parent instanceof EntityListWrapper) {
-      $child_wrapper = $parent->get(0)->{$drupal_field};
+      $child_wrapper = $parent->get(0)->{$backdrop_field};
     }
     else {
-      $child_wrapper = $parent->{$drupal_field};
+      $child_wrapper = $parent->{$backdrop_field};
     }
     $parent = $child_wrapper;
   }
@@ -304,4 +311,14 @@ function mailchimp_activity_permission() {
     'description' => t('Add, Delete, and Configure MailChimp Activity entity settings.'),
   );
   return $return;
+}
+
+/**
+* Implements hook_autoload_info().
+*/
+function mailchimp_activity_autoload_info() {
+  return array(
+  'MailchimpActivityEntity' => 'includes\mailchimp_activity.entity.inc',
+  'MailChimpActivityUIController' => 'includes\mailchimp_activity.ui_controller.inc',
+  );
 }

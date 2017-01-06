@@ -19,7 +19,7 @@ function mailchimp_signup_menu() {
   $items['admin/config/services/mailchimp/signup/%mailchimp_signup/edit'] = array(
     'title' => 'Edit a signup form',
     'description' => 'Edit a Signup form.',
-    'page callback' => 'drupal_get_form',
+    'page callback' => 'backdrop_get_form',
     'page arguments' => array('mailchimp_signup_signup_form', 5),
     'load arguments' => array(5),
     'access arguments' => array('administer mailchimp'),
@@ -28,7 +28,7 @@ function mailchimp_signup_menu() {
   );
   $items['admin/config/services/mailchimp/signup/%mailchimp_signup/delete'] = array(
     'title' => 'Delete Signup form',
-    'page callback' => 'drupal_get_form',
+    'page callback' => 'backdrop_get_form',
     'page arguments' => array('mailchimp_signup_signup_delete_form', 5),
     'access arguments' => array('administer mailchimp'),
     'file' => 'includes/mailchimp_signup.admin.inc',
@@ -86,7 +86,7 @@ function mailchimp_signup_block_info() {
     if (intval($signup->mode) == MAILCHIMP_SIGNUP_BLOCK || intval($signup->mode) == MAILCHIMP_SIGNUP_BOTH) {
       $blocks[$signup->identifier()] = array(
         'info' => t('Mailchimp Subscription Form: @name', array('@name' => $signup->label())),
-        'cache' => DRUPAL_CACHE_PER_USER,
+        'cache' => BACKDROP_CACHE_PER_USER,
       );
     }
   }
@@ -103,7 +103,7 @@ function mailchimp_signup_block_view($delta = '') {
   if ($signup) {
     $block = array(
       'subject' => check_plain($signup->getTranslation('title')),
-      'content' => drupal_get_form('mailchimp_signup_subscribe_block_' . $signup->name . '_form', $signup, 'mailchimp_signup_block'),
+      'content' => backdrop_get_form('mailchimp_signup_subscribe_block_' . $signup->name . '_form', $signup, 'mailchimp_signup_block'),
     );
   }
   else {
@@ -172,7 +172,7 @@ function mailchimp_signup_entity_info() {
       'label' => t('MailChimp Signup'),
       'plural label' => t('MailChimp Signups'),
       'entity class' => 'MailchimpSignup',
-      'controller class' => 'EntityAPIControllerExportable',
+      'controller class' => 'EMWController',
       'base table' => 'mailchimp_signup',
       'uri callback' => 'entity_class_uri',
       'fieldable' => FALSE,
@@ -226,7 +226,7 @@ function mailchimp_signup_entity_access() {
  */
 function mailchimp_signup_page($signup_id) {
   $signup = mailchimp_signup_load($signup_id);
-  return drupal_get_form('mailchimp_signup_subscribe_page_' . $signup_id . '_form', $signup, 'mailchimp_signup_page');
+  return backdrop_get_form('mailchimp_signup_subscribe_page_' . $signup_id . '_form', $signup, 'mailchimp_signup_page');
 }
 
 /**
@@ -270,7 +270,7 @@ function mailchimp_signup_subscribe_form($form, &$form_state, $signup, $type) {
   $lists_count = (!empty($lists)) ? count($lists) : 0;
 
   if (empty($lists)) {
-    drupal_set_message('The subscription service is currently unavailable. Please try again later.', 'warning');
+    backdrop_set_message('The subscription service is currently unavailable. Please try again later.', 'warning');
   }
 
   $list = array();
@@ -317,7 +317,7 @@ function mailchimp_signup_subscribe_form($form, &$form_state, $signup, $type) {
   foreach ($signup->settings['mergefields'] as $tag => $mergevar) {
     if (!empty($mergevar)) {
       $mergevar->name = mailchimp_signup_tt("mailchimp_signup:mailchimp_signup:$signup->name:mergefield:$tag", $mergevar->name);
-      $form['mergevars'][$tag] = mailchimp_insert_drupal_form_tag($mergevar);
+      $form['mergevars'][$tag] = mailchimp_insert_backdrop_form_tag($mergevar);
       if (empty($lists)) {
         $form['mergevars'][$tag]['#disabled'] = TRUE;
       }
@@ -390,8 +390,8 @@ function mailchimp_signup_subscribe_form_submit($form, &$form_state) {
     $result = mailchimp_subscribe($list_id, $email, $mergevars, $interests, $signup->settings['doublein']);
     // Let other modules act on the results in hook_form_alter.
     $form_state['mailchimp_results'] = $result;
-    if (empty($result) || (isset($result->success) && $result->success === FALSE)) {
-      drupal_set_message(t('There was a problem with your newsletter signup to %list.', array(
+    if (empty($result) || ($result->success === FALSE)) {
+      backdrop_set_message(t('There was a problem with your newsletter signup to %list.', array(
         '%list' => $list_details[$list_id]->name,
       )), 'warning');
     }
@@ -401,7 +401,7 @@ function mailchimp_signup_subscribe_form_submit($form, &$form_state) {
   }
   if (count($successes) && !empty($signup->settings['confirmation_message'])) {
     $message = mailchimp_signup_tt("mailchimp_signup:mailchimp_signup:$signup->name:confirmation_message", check_plain($signup->settings['confirmation_message']));
-    drupal_set_message($message, 'status');
+    backdrop_set_message($message, 'status');
   }
   if (!empty($signup->settings['destination'])) {
     $form_state['redirect'] = $signup->settings['destination'];
@@ -476,4 +476,14 @@ function mailchimp_signup_set_target($source, $entity, $target, $value, $mapping
   }
 
   $entity->$field_name = $field;
+}
+
+/**
+* Implements hook_autoload_info().
+*/
+function mailchimp_signup_autoload_info() {
+  return array(
+  'MailchimpSignup' => 'includes\mailchimp_signup.entity.inc',
+  'MailChimpSignupUIController' => 'includes\mailchimp_signup.ui_controller.inc',
+  );
 }

@@ -51,7 +51,7 @@ function mailchimp_menu() {
   $items['admin/config/services/mailchimp'] = array(
     'title' => 'MailChimp',
     'description' => 'Manage MailChimp Settings.',
-    'page callback' => 'drupal_get_form',
+    'page callback' => 'backdrop_get_form',
     'page arguments' => array('mailchimp_admin_settings'),
     'access arguments' => array('administer mailchimp'),
     'file' => 'includes/mailchimp.admin.inc',
@@ -64,7 +64,7 @@ function mailchimp_menu() {
   );
   $items['admin/config/services/mailchimp/list_cache_clear'] = array(
     'title' => 'MailChimp webhooks endpoint',
-    'page callback' => 'drupal_get_form',
+    'page callback' => 'backdrop_get_form',
     'page arguments' => array('mailchimp_clear_list_cache_form'),
     'access callback' => 'mailchimp_apikey_ready_access',
     'access arguments' => array('administer mailchimp'),
@@ -116,15 +116,16 @@ function mailchimp_apikey_ready_access($permission) {
  *   Instance of the MailChimp library class. Can be overridden by $classname.
  */
 function mailchimp_get_api_object($classname = 'Mailchimp', $api_key = NULL) {
+  $config = config('mailchimp.settings');
   // Set correct library class namespace depending on test mode.
-  if (variable_get('mailchimp_test_mode', FALSE)) {
+  if ($config->get('test_mode')) {
     $classname = '\Mailchimp\Tests\\' . $classname;
   }
   else {
     $classname = '\Mailchimp\\' . $classname;
   }
 
-  $mailchimp = &drupal_static(__FUNCTION__);
+  $mailchimp = &backdrop_static(__FUNCTION__);
   if (!$api_key && isset($mailchimp) && $mailchimp instanceof $classname) {
     return $mailchimp;
   }
@@ -137,14 +138,14 @@ function mailchimp_get_api_object($classname = 'Mailchimp', $api_key = NULL) {
   if (!$library['installed'] && !class_exists('Mailchimp\Mailchimp')) {
     $msg = t('Failed to load MailChimp PHP library. Please refer to the installation requirements.');
     watchdog('mailchimp', $msg, array(), WATCHDOG_ERROR);
-    drupal_set_message($msg, 'error', FALSE);
+    backdrop_set_message($msg, 'error', FALSE);
     return NULL;
   }
 
   if (!class_exists('\GuzzleHttp\Client')) {
     $msg = t('The MailChimp PHP library is missing the required GuzzleHttp library. Please check the installation notes in README.txt.');
     watchdog('mailchimp', $msg, array(), WATCHDOG_ERROR);
-    drupal_set_message($msg, 'error', FALSE);
+    backdrop_set_message($msg, 'error', FALSE);
     return NULL;
   }
 
@@ -152,9 +153,9 @@ function mailchimp_get_api_object($classname = 'Mailchimp', $api_key = NULL) {
     'api_class' => $classname,
   );
   if (!$api_key) {
-    $api_key = $default_api_key = variable_get('mailchimp_api_key', '');
+    $api_key = $default_api_key = $config->get('api_key');
     // Allow modules to alter the default.
-    drupal_alter('mailchimp_api_key', $api_key, $context);
+    backdrop_alter('mailchimp_api_key', $api_key, $context);
     // Check to see if the key was altered.
     if ($api_key !== $default_api_key) {
       // Invalidate all caches because the key was altered.
@@ -166,7 +167,7 @@ function mailchimp_get_api_object($classname = 'Mailchimp', $api_key = NULL) {
     watchdog('mailchimp', 'MailChimp Error: API Key cannot be blank.', array(), WATCHDOG_ERROR);
     return NULL;
   }
-  // Set the timeout to something that won't take down the Drupal site:
+  // Set the timeout to something that won't take down the Backdrop site:
   $timeout = 60;
 
   $mailchimp = new $classname($api_key, 'apikey', $timeout);
@@ -211,6 +212,7 @@ function mailchimp_get_lists($list_ids = array(), $reset = FALSE) {
     try {
       /* @var \Mailchimp\MailchimpLists $mc_lists */
       $mc_lists = mailchimp_get_api_object('MailchimpLists');
+  dpm($mc_lists);
       if (!$mc_lists) {
         throw new MailchimpException('Cannot get lists without MailChimp API. Check API key has been entered.');
       }
@@ -445,7 +447,7 @@ function mailchimp_is_subscribed($list_id, $email, $reset = FALSE) {
  *   True on success.
  */
 function mailchimp_subscribe($list_id, $email, $merge_vars = NULL, $interests = array(), $double_optin = FALSE, $format = 'html') {
-  if (variable_get('mailchimp_cron', FALSE)) {
+  if (config_get('mailchimp.settings', 'cron')) {
     $args = array(
       'list_id' => $list_id,
       'email' => $email,
@@ -509,7 +511,7 @@ function mailchimp_subscribe_process($list_id, $email, $merge_vars = NULL, $inte
       );
     }
     else {
-      if (!variable_get('mailchimp_test_mode')) {
+      if (!config_get('mailchimp.settings', 'test_mode')) {
         watchdog('mailchimp', 'A problem occurred subscribing @email to list @list.', array(
           '@email' => $email,
           '@list' => $list_id,
@@ -545,7 +547,7 @@ function mailchimp_subscribe_process($list_id, $email, $merge_vars = NULL, $inte
  *   Success or failure.
  */
 function mailchimp_addto_queue($function, $args) {
-  $queue = DrupalQueue::get(MAILCHIMP_QUEUE_CRON);
+  $queue = BackdropQueue::get(MAILCHIMP_QUEUE_CRON);
   $queue->createQueue();
   mailchimp_update_local_cache($function, $args);
   return $queue->createItem(array(
@@ -624,7 +626,7 @@ function mailchimp_update_local_cache($function, $args) {
  *   Success or failure.
  */
 function mailchimp_update_member($list_id, $email, $merge_vars, $interests, $format = 'html') {
-  if (variable_get('mailchimp_cron', FALSE)) {
+  if (config_get('mailchimp.settings', 'cron')) {
     $args = array(
       'list_id' => $list_id,
       'email' => $email,
@@ -810,7 +812,7 @@ function mailchimp_unsubscribe_member($list_id, $email, $delete = FALSE, $goodby
   $result = FALSE;
 
   if (mailchimp_is_subscribed($list_id, $email)) {
-    if (variable_get('mailchimp_cron', FALSE)) {
+    if (config_get('mailchimp.settings', 'cron')) {
       $result = mailchimp_addto_queue(
         'mailchimp_unsubscribe_process',
         array(
@@ -978,7 +980,7 @@ function mailchimp_segment_add_subscriber($list_id, $segment_id, $email, $batch 
     $success = mailchimp_segment_batch_add_subscribers($list_id, $segment_id, $batch);
   }
   else {
-    $queue = DrupalQueue::get($queue_id);
+    $queue = BackdropQueue::get($queue_id);
     $queue->createQueue();
     $success = $queue->createItem(array(
       'function' => 'mailchimp_segment_batch_add_subscribers',
@@ -1324,7 +1326,7 @@ function mailchimp_process_webhook() {
  *   The key.
  */
 function mailchimp_webhook_key() {
-  return drupal_hash_base64($GLOBALS['base_url'] . drupal_get_private_key() . drupal_get_hash_salt());
+  return backdrop_hash_base64($GLOBALS['base_url'] . backdrop_get_private_key() . backdrop_get_hash_salt());
 }
 
 /**
@@ -1421,15 +1423,15 @@ function mailchimp_interest_groups_form_elements($list, $defaults = array(), $em
 }
 
 /**
- * Convert mailchimp form elements to Drupal Form API.
+ * Convert mailchimp form elements to Backdrop Form API.
  *
  * @param array $mergevar
  *   The mailchimp-formatted form element to convert.
  *
  * @return array
- *   A properly formatted drupal form element.
+ *   A properly formatted backdrop form element.
  */
-function mailchimp_insert_drupal_form_tag($mergevar) {
+function mailchimp_insert_backdrop_form_tag($mergevar) {
   // Insert common FormAPI properties:
   $input = array(
     '#title' => t('@mergevar', array('@mergevar' => $mergevar->name)),
@@ -1477,7 +1479,7 @@ function mailchimp_insert_drupal_form_tag($mergevar) {
       break;
 
     case 'dropdown':
-      // Dropdown is mapped to <select> element in Drupal Form API.
+      // Dropdown is mapped to <select> element in Backdrop Form API.
       $input['#type'] = 'select';
 
       // Creates options, we must delete array keys to have relevant information
@@ -1492,7 +1494,7 @@ function mailchimp_insert_drupal_form_tag($mergevar) {
 
     case 'radio':
       // Radio is mapped to <input type='radio' /> i.e. 'radios' element in
-      // Drupal Form API.
+      // Backdrop Form API.
       $input['#type'] = 'radios';
 
       // Creates options, we must delete array keys to have relevant information
@@ -1519,7 +1521,7 @@ function mailchimp_insert_drupal_form_tag($mergevar) {
 
     default:
       // This is a standard input[type=text] or something we can't handle with
-      // Drupal FormAPI.
+      // Backdrop FormAPI.
       $input['#type'] = 'textfield';
       $input['#size'] = $mergevar->options->size;
       break;
@@ -1541,11 +1543,11 @@ function mailchimp_insert_drupal_form_tag($mergevar) {
  * large unsubscribes and subscribes and specifically call the batch functions.
  */
 function mailchimp_cron() {
-  $queue = DrupalQueue::get(MAILCHIMP_QUEUE_CRON);
+  $queue = BackdropQueue::get(MAILCHIMP_QUEUE_CRON);
   $queue->createQueue();
   $queue_count = $queue->numberOfItems();
   if ($queue_count > 0) {
-    $batch_limit = variable_get('mailchimp_batch_limit', 100);
+    $batch_limit = config_get('mailchimp.settings', 'batch_limit');
     $batch_size = ($queue_count < $batch_limit) ? $queue_count : $batch_limit;
     $count = 0;
     while ($count < $batch_size) {
@@ -1612,7 +1614,7 @@ function mailchimp_variable_info($options) {
  *   entity.
  */
 function mailchimp_mergevars_populate($mergefields, $entity, $entity_type) {
-  $mergevars = drupal_static(__FUNCTION__, array());
+  $mergevars = backdrop_static(__FUNCTION__, array());
   list($id, $vid, $bundle) = entity_extract_ids($entity_type, $entity);
 
   if (!isset($mergevars[$bundle . ':' . $id])) {
@@ -1623,3 +1625,24 @@ function mailchimp_mergevars_populate($mergefields, $entity, $entity_type) {
 
   return $mergevars[$bundle . ':' . $id];
 }
+
+/**
+* Implements hook_autoload_info().
+*/
+function mailchimp_autoload_info() {
+  return array(
+  'MailchimpException' => 'includes\mailchimp_exception.inc',
+  );
+}
+
+/**
+* Implements hook_config_info().
+*/
+function mailchimp_config_info() {
+  $prefixes['mailchimp.settings'] = array(
+  'label' => t('MailChimp settings'),
+  'group' => t('Configuration'),
+  );
+  return $prefixes;
+}
+

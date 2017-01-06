@@ -39,11 +39,11 @@ function mailchimp_automations_entity_form($form, &$form_state, MailchimpAutomat
     '#weight' => -9,
   );
 
-  $form['drupal_entity'] = array(
-    '#title' => t('Drupal entity'),
+  $form['backdrop_entity'] = array(
+    '#title' => t('Backdrop entity'),
     '#type' => 'fieldset',
     '#attributes' => array(
-      'id' => array('mailchimp-automation-drupal-entity'),
+      'id' => array('mailchimp-automation-backdrop-entity'),
     ),
     '#weight' => -8,
   );
@@ -56,9 +56,9 @@ function mailchimp_automations_entity_form($form, &$form_state, MailchimpAutomat
     }
   }
   $automation_entity_label = $entitynotnull ? $mailchimp_automations_entity->label : '';
-  drupal_alter('mailchimp_automations_entity_options', $entity_types, $automation_entity_label);
+  backdrop_alter('mailchimp_automations_entity_options', $entity_types, $automation_entity_label);
   asort($entity_types);
-  $form['drupal_entity']['entity_type'] = array(
+  $form['backdrop_entity']['entity_type'] = array(
     '#title' => t('Entity type'),
     '#type' => 'select',
     '#options' => $entity_types,
@@ -67,7 +67,7 @@ function mailchimp_automations_entity_form($form, &$form_state, MailchimpAutomat
     '#description' => t('Select an entity type to trigger a mailchimp automation.'),
     '#ajax' => array(
       'callback' => 'mailchimp_automations_mapping_form_callback',
-      'wrapper' => 'mailchimp-automation-drupal-entity',
+      'wrapper' => 'mailchimp-automation-backdrop-entity',
     ),
     '#weight' => -8,
   );
@@ -84,17 +84,17 @@ function mailchimp_automations_entity_form($form, &$form_state, MailchimpAutomat
       $bundles[$key] = $bundle['label'];
     }
     asort($bundles);
-    $form['drupal_entity']['bundle'] = array(
+    $form['backdrop_entity']['bundle'] = array(
       '#title' => t('Entity bundle'),
       '#type' => 'select',
       '#required' => TRUE,
-      '#description' => t('Select a Drupal entity bundle with an email address to report on.'),
+      '#description' => t('Select a Backdrop entity bundle with an email address to report on.'),
       '#options' => $bundles,
       '#default_value' => $entitynotnull ? $mailchimp_automations_entity->bundle : 0,
       '#weight' => -7,
       '#ajax' => array(
         'callback' => 'mailchimp_automations_mapping_form_callback',
-        'wrapper' => 'mailchimp-automation-drupal-entity',
+        'wrapper' => 'mailchimp-automation-backdrop-entity',
       ),
     );
 
@@ -105,7 +105,7 @@ function mailchimp_automations_entity_form($form, &$form_state, MailchimpAutomat
     if ($form_bundle) {
       // Prep the field & properties list before creating the form item:
       $fields = mailchimp_automations_email_fieldmap_options($form_entity_type, $form_bundle);
-      $form['drupal_entity']['email_property'] = array(
+      $form['backdrop_entity']['email_property'] = array(
         '#title' => t('Email Property'),
         '#type' => 'select',
         '#required' => TRUE,
@@ -116,7 +116,7 @@ function mailchimp_automations_entity_form($form, &$form_state, MailchimpAutomat
         '#weight' => -6,
         '#ajax' => array(
           'callback' => 'mailchimp_automations_mapping_form_callback',
-          'wrapper' => 'mailchimp-automation-drupal-entity',
+          'wrapper' => 'mailchimp-automation-backdrop-entity',
         ),
       );
 
@@ -131,7 +131,7 @@ function mailchimp_automations_entity_form($form, &$form_state, MailchimpAutomat
           $options[$list_id] = $list->name;
         }
         if (!empty($options)) {
-          $form['drupal_entity']['list_id'] = array(
+          $form['backdrop_entity']['list_id'] = array(
             '#title' => t('MailChimp List'),
             '#type' => 'select',
             '#required' => TRUE,
@@ -142,13 +142,13 @@ function mailchimp_automations_entity_form($form, &$form_state, MailchimpAutomat
             '#weight' => -5,
             '#ajax' => array(
               'callback' => 'mailchimp_automations_mapping_form_callback',
-              'wrapper' => 'mailchimp-automation-drupal-entity',
+              'wrapper' => 'mailchimp-automation-backdrop-entity',
             ),
           );
         }
         else {
           $msg = t('You must add at least one list in MailChimp for this functionality to work.');
-          drupal_set_message($msg, 'error', FALSE);
+          backdrop_set_message($msg, 'error', FALSE);
         }
 
         $form_list_id = & $form_state['values']['list_id'];
@@ -159,7 +159,7 @@ function mailchimp_automations_entity_form($form, &$form_state, MailchimpAutomat
           $automations = mailchimp_automations_get_automations();
           if (!empty($automations)) {
             $automation_options = mailchimp_automations_options_list($automations);
-            $form['drupal_entity']['workflow_id'] = array(
+            $form['backdrop_entity']['workflow_id'] = array(
               '#title' => t('Workflow ID'),
               '#type' => 'select',
               '#required' => TRUE,
@@ -170,13 +170,13 @@ function mailchimp_automations_entity_form($form, &$form_state, MailchimpAutomat
               '#weight' => -4,
               '#ajax' => array(
                 'callback' => 'mailchimp_automations_mapping_form_callback',
-                'wrapper' => 'mailchimp-automation-drupal-entity',
+                'wrapper' => 'mailchimp-automation-backdrop-entity',
               ),
             );
           }
           else {
             $msg = t('You must add at least one workflow in MailChimp for this functionality to work.');
-            drupal_set_message($msg, 'error', FALSE);
+            backdrop_set_message($msg, 'error', FALSE);
           }
 
           $form_workflow_id = & $form_state['values']['workflow_id'];
@@ -188,7 +188,7 @@ function mailchimp_automations_entity_form($form, &$form_state, MailchimpAutomat
             $emails = mailchimp_automations_get_emails_for_workflow($form_workflow_id);
             if (!empty($emails)) {
               array_unshift($emails, t('-- Select --'));
-              $form['drupal_entity']['workflow_email_id'] = array(
+              $form['backdrop_entity']['workflow_email_id'] = array(
                 '#title' => t('Workflow Email ID'),
                 '#type' => 'select',
                 '#required' => TRUE,
@@ -201,7 +201,7 @@ function mailchimp_automations_entity_form($form, &$form_state, MailchimpAutomat
             }
             else {
               $msg = t('You must add at least one workflow email in MailChimp for this functionality to work.');
-              drupal_set_message($msg, 'error', FALSE);
+              backdrop_set_message($msg, 'error', FALSE);
             }
           }
         }
@@ -236,7 +236,7 @@ function mailchimp_automations_options_list($automations) {
  * Ajax callback for mailchimp_automations_mapping_form().
  */
 function mailchimp_automations_mapping_form_callback($form, &$form_state) {
-  return $form['drupal_entity'];
+  return $form['backdrop_entity'];
 }
 
 /**
@@ -293,7 +293,7 @@ function mailchimp_automations_entity_form_submit($form, &$form_state) {
 }
 
 /**
- * Return all possible Drupal properties for a given entity type.
+ * Return all possible Backdrop properties for a given entity type.
  *
  * @param string $entity_type
  *   Name of entity whose properties to list.

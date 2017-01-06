@@ -259,11 +259,11 @@ function mailchimp_signup_form_submit($form, &$form_state) {
       }
     }
 
-    drupal_set_message(t('Signup form @name has been saved.', array('@name' => $signup->name)));
+    backdrop_set_message(t('Signup form @name has been saved.', array('@name' => $signup->name)));
     $form_state['redirect'] = 'admin/config/services/mailchimp/signup';
   }
   else {
-    drupal_set_message(t('There has been an error saving your signup form.'), 'error');
+    backdrop_set_message(t('There has been an error saving your signup form.'), 'error');
   }
 }
 
@@ -292,7 +292,7 @@ function mailchimp_signup_delete_submit($form, &$form_state) {
 function mailchimp_signup_signup_delete_form_submit($form, &$form_state) {
   $signup = $form_state['signup'];
   mailchimp_signup_delete_multiple(array($signup->identifier()));
-  drupal_set_message(t('%name has been deleted.', array('%name' => $signup->label())));
+  backdrop_set_message(t('%name has been deleted.', array('%name' => $signup->label())));
   $form_state['redirect'] = 'admin/config/services/mailchimp/signup';
 }
 
