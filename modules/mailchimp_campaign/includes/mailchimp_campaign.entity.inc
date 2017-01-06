@@ -141,7 +141,6 @@ class MailChimpCampaign extends Entity {
    * {@inheritdoc}
    */
   public function view($view_mode = 'full', $langcode = NULL, $page = NULL) {
-    dpm($this->entityType());
     return entity_get_controller($this->entityType())->view(array($this), $view_mode, $langcode, $page);
   }
 
