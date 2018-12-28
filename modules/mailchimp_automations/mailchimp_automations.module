@@ -231,7 +231,7 @@ function mailchimp_automations_permission() {
 */
 function mailchimp_automations_autoload_info() {
   return array(
-  'MailchimpAutomationsEntity' => 'includes\mailchimp_automations.entity.inc',
-  'MailChimpAutomationUIController' => 'includes\mailchimp_automations.ui_controller.inc',
+  'MailchimpAutomationsEntity' => 'includes/mailchimp_automations.entity.inc',
+  'MailChimpAutomationUIController' => 'includes/mailchimp_automations.ui_controller.inc',
   );
 }

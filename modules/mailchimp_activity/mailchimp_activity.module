@@ -318,7 +318,7 @@ function mailchimp_activity_permission() {
 */
 function mailchimp_activity_autoload_info() {
   return array(
-  'MailchimpActivityEntity' => 'includes\mailchimp_activity.entity.inc',
-  'MailChimpActivityUIController' => 'includes\mailchimp_activity.ui_controller.inc',
+  'MailchimpActivityEntity' => 'includes/mailchimp_activity.entity.inc',
+  'MailChimpActivityUIController' => 'includes/mailchimp_activity.ui_controller.inc',
   );
 }

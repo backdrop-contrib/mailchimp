@@ -1630,7 +1630,7 @@ function mailchimp_mergevars_populate($mergefields, $entity, $entity_type) {
 */
 function mailchimp_autoload_info() {
   return array(
-  'MailchimpException' => 'includes\mailchimp_exception.inc',
+  'MailchimpException' => 'includes/mailchimp_exception.inc',
   );
 }
 

@@ -1044,7 +1044,7 @@ function mailchimp_campaign_view($campaign) {
 */
 function mailchimp_campaign_autoload_info() {
   return array(
-  'MailChimpCampaignController' => 'includes\mailchimp_campaign.controller.inc',
-  'MailChimpCampaign' => 'includes\mailchimp_campaign.entity.inc',
+  'MailChimpCampaignController' => 'includes/mailchimp_campaign.controller.inc',
+  'MailChimpCampaign' => 'includes/mailchimp_campaign.entity.inc',
   );
 }
