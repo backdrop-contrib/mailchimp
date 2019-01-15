@@ -6,8 +6,7 @@
  */
 
 class MailchimpSignup extends Entity {
-  public
-    $mcs_id,
+  public $mcs_id,
     $name,
     $mc_lists,
     $mode,
@@ -25,7 +24,7 @@ class MailchimpSignup extends Entity {
     if (!empty($values['settings']['mergefields'])) {
       foreach ($values['settings']['mergefields'] as $tag => $mergefield) {
         if (is_array($mergefield)) {
-          if (is_array($mergefield['options'])) {
+          if (isset($mergefield['options']) && is_array($mergefield['options'])) {
             $mergefield['options'] = (object) $mergefield['options'];
           }
           $values['settings']['mergefields'][$tag] = (object) $mergefield;
@@ -50,32 +49,10 @@ class MailchimpSignup extends Entity {
     return array(
       'path' => 'admin/config/services/mailchimp/signup/manage/' . $this->name,
       'options' => array(
-        'entity_type' => $this->entityType(),
+        'entity_type' => $this->entityType,
         'entity' => $this,
       ),
     );
   }
-
-  /**
-   * Implements EntityInterface::id().
-   */
-  public function id() {
-    return $this->mcs_id;
-  }
-
-  /**
-   * Implements EntityInterface::entityType().
-   */
-  public function entityType() {
-    return 'mailchimp_signup';
-  }
-
-  /**
-   * {@inheritdoc}
-   */
-  public function view($view_mode = 'full', $langcode = NULL, $page = NULL) {
-    return entity_get_controller($this->entityType())->view(array($this), $view_mode, $langcode, $page);
-  }
-
 
 }

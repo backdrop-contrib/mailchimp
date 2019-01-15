@@ -4,7 +4,7 @@ package = MailChimp
 backdrop = 1.x
 type = module
 
-configure = admin/config/services/mailchimp/campaigns
-
 dependencies[] = mailchimp_lists
-dependencies[] = entity_ui
+dependencies[] = entity
+
+configure = admin/config/services/mailchimp/campaigns

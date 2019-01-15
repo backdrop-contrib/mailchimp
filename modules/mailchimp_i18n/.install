@@ -1,0 +1,28 @@
+<?php
+/**
+ * @file
+ * Install, update and uninstall functions for the mailchimp_i18n module.
+ *
+ */
+
+
+/**
+ * Implements hook_update_last_removed().
+ */
+function mailchimp_i18n_update_last_removed() {
+  return;
+}
+
+/**
+ * Implements hook_update_N().
+ */
+function mailchimp_i18n_update_1000() {
+  $config = config('mailchimp_i18n.settings');
+}
+
+/**
+ * Implements hook_install().
+ */
+function mailchimp_i18n_install() {
+  // Dynamically generated variable data was detected.
+}

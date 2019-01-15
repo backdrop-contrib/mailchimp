@@ -256,8 +256,8 @@ function mailchimp_automations_entity_form_validate($form, &$form_state) {
           'bundle',
           t('A MailChimp Automation Entity already exists for this Bundle. Either select a different Bundle or edit the !link for this bundle.',
             array(
-              '!link' => l(t('existing MailChimp Automation Entity'), "admin/config/services/mailchimp/automations/manage/{$extant_ent->name}"),
-            )
+          '!link' => l(t('existing MailChimp Automation Entity'), "admin/config/services/mailchimp/automations/manage/{$extant_ent->name}"),
+        )
           ));
       }
     }

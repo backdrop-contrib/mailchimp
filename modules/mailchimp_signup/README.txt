@@ -1,5 +1,5 @@
 Create pages and blocks for subscribing to MailChimp lists anywhere on your
-Backdrop site. This module requires the [Entity module](http://www.drupal.org/project/entity).
+Drupal site. This module requires the [Entity module](http://www.drupal.org/project/entity).
 
 ## Installation
 

@@ -1,11 +1,10 @@
 name = MailChimp
 description = MailChimp email service integration.
 package = MailChimp
-php = 5.5
 backdrop = 1.x
 type = module
-
-dependencies[] = entity_metadata_wrapper
-dependencies[] = entity_ui
+php = 5.4
 
 configure = admin/config/services/mailchimp
+
+test_dependencies[] = libraries

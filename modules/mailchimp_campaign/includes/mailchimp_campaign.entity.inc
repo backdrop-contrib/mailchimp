@@ -20,6 +20,8 @@ class MailChimpCampaign extends Entity {
    * Assemble html representation of the Campaign content.
    */
   public function buildContent($view_mode = 'full', $langcode = NULL) {
+    $build = parent::buildContent($view_mode, $langcode);
+
     // Prepare rendered content:
     $content = mailchimp_campaign_render_template($this->template);
     $rendered = '';
@@ -93,10 +95,10 @@ class MailChimpCampaign extends Entity {
       'content' => array(
         'label' => t('Rendered template HTML (!archive)',
           array(
-            '!archive' => l(t('View MailChimp archive'), $this->mc_data->archive_url, array(
-              'attributes' => array('target' => '_blank'),
-            )),
+          '!archive' => l(t('View MailChimp archive'), $this->mc_data->archive_url, array(
+            'attributes' => array('target' => '_blank'),
           )),
+        )),
         'value' => $rendered,
       ),
     );
@@ -117,31 +119,6 @@ class MailChimpCampaign extends Entity {
    */
   public function label() {
     return $this->mc_data->settings->title;
-  }
-  /**
-   * Implements EntityInterface::id().
-   */
-  public function id() {
-    return $this->mc_data->settings->title;
-  }
-
-  /**
-   * Implements EntityInterface::entityType().
-   */
-  public function entityType() {
-    return 'mailchimp_campaign';
-  }
-
-  /**
-   * Implements EntityInterface::uri().
-   */
-  public function uri() {}
-
-    /**
-   * {@inheritdoc}
-   */
-  public function view($view_mode = 'full', $langcode = NULL, $page = NULL) {
-    return entity_get_controller($this->entityType())->view(array($this), $view_mode, $langcode, $page);
   }
 
 }

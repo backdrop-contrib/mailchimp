@@ -4,7 +4,7 @@
  * Test class and methods for the Mailchimp Lists module.
  */
 
-class MailchimpListsTestCase extends BackdropWebTestCase {
+class MailchimpListsTestCase extends DrupalWebTestCase {
 
   /**
    * Returns info displayed in the test interface.
@@ -30,7 +30,7 @@ class MailchimpListsTestCase extends BackdropWebTestCase {
    */
   protected function setUp() {
     // Use a profile that contains required modules:
-    $prof = backdrop_get_profile();
+    $prof = drupal_get_profile();
     $this->profile = $prof;
     // Enable modules required for the test.
     $enabled_modules = array(
@@ -41,10 +41,8 @@ class MailchimpListsTestCase extends BackdropWebTestCase {
       'mailchimp_lists',
     );
     parent::setUp($enabled_modules);
-    $config = config('mailchimp.settings');
-    $config->set('api_key', 'MAILCHIMP_TEST_API_KEY');
-    $config->set('test_mode', TRUE);
-    $config->save();
+    variable_set('mailchimp_api_key', 'MAILCHIMP_TEST_API_KEY');
+    variable_set('mailchimp_test_mode', TRUE);
   }
 
   /**
@@ -54,9 +52,7 @@ class MailchimpListsTestCase extends BackdropWebTestCase {
    */
   protected function tearDown() {
     parent::tearDown();
-    $config = config('mailchimp.settings');
-    $config->clear('test_mode');
-    $config->save();
+    variable_del('mailchimp_test_mode');
   }
 
   /**
@@ -159,8 +155,8 @@ class MailchimpListsTestCase extends BackdropWebTestCase {
     $this->assertEqual($member_info->id, md5($email), 'Tested new user subscription.');
 
     $this->assertEqual($member_info->merge_fields->EMAIL, $email);
-    $this->assertEqual($member_info->interests->{$interest_ids[0]}, TRUE);
-    $this->assertEqual($member_info->interests->{$interest_ids[1]}, FALSE);
+    $this->assertEqual($member_info->interests->{$interest_category_id}[$interest_ids[0]], TRUE);
+    $this->assertEqual($member_info->interests->{$interest_category_id}[$interest_ids[1]], FALSE);
   }
 
   /**

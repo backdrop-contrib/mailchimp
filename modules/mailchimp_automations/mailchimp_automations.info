@@ -5,4 +5,5 @@ backdrop = 1.x
 type = module
 
 dependencies[] = mailchimp
-dependencies[] = entity_ui
+dependencies[] = entity
+

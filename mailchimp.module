@@ -5,6 +5,9 @@
  * Mailchimp module.
  */
 
+use Mailchimp\MailchimpLists;
+use Mailchimp\Mailchimp;
+
 define('MAILCHIMP_QUEUE_CRON', 'mailchimp');
 define('MAILCHIMP_BATCH_QUEUE_CRON', 'mailchimp_batch');
 
@@ -21,7 +24,7 @@ function mailchimp_libraries_info() {
   $libraries['mailchimp'] = array(
     'name' => 'MailChimp API',
     'vendor url' => 'https://github.com/thinkshout/mailchimp-api-php',
-    'download url' => 'https://github.com/thinkshout/mailchimp-api-php/archive/v1.0.5.zip',
+    'download url' => 'https://github.com/thinkshout/mailchimp-api-php/releases/download/v1.0.10/v1.0.10-package.zip',
     'version arguments' => array(
       'file' => 'composer.json',
       'pattern' => '/"version": "([0-9a-zA-Z.-]+)"/',
@@ -29,8 +32,9 @@ function mailchimp_libraries_info() {
     'files' => array(
       'php' => array(
         'src/Mailchimp.php',
-        'src/MailchimpAPIException',
+        'src/MailchimpAPIException.php',
         'src/MailchimpCampaigns.php',
+        'src/MailchimpConnectedSites.php',
         'src/MailchimpLists.php',
         'src/MailchimpReports.php',
         'src/MailchimpTemplates.php',
@@ -105,6 +109,16 @@ function mailchimp_apikey_ready_access($permission) {
 }
 
 /**
+ * Implements hook_config_info().
+ */
+function mailchimp_config_info() {
+  $prefixes['mailchimp.settings'] = array(
+    'label' => t('Module name settings'),
+    'group' => t('Configuration'),
+  );
+}
+
+/**
  * Get an instance of the MailChimp library.
  *
  * @param string $classname
@@ -136,7 +150,7 @@ function mailchimp_get_api_object($classname = 'Mailchimp', $api_key = NULL) {
     $library = FALSE;
   }
   if (!$library['installed'] && !class_exists('Mailchimp\Mailchimp')) {
-    $msg = t('Failed to load MailChimp PHP library. Please refer to the installation requirements.');
+    $msg = t('Failed to load the MailChimp PHP library. Please refer to the installation requirements.');
     watchdog('mailchimp', $msg, array(), WATCHDOG_ERROR);
     backdrop_set_message($msg, 'error', FALSE);
     return NULL;
@@ -168,47 +182,127 @@ function mailchimp_get_api_object($classname = 'Mailchimp', $api_key = NULL) {
     return NULL;
   }
   // Set the timeout to something that won't take down the Backdrop site:
-  $timeout = 60;
+  $http_options = array(
+    'timeout' => 60
+  );
 
-  $mailchimp = new $classname($api_key, 'apikey', $timeout);
+  $proxy_server = settings_get('proxy_server', '');
+  if ($proxy_server) {
+    $proxy_url = sprintf(
+      'tcp://%s:%d',
+      $proxy_server,
+      settings_get('proxy_port', 8080)
+    );
+
+    $http_options['proxy'] = array(
+      'http' => $proxy_url,
+      'https' => $proxy_url,
+    );
+
+    if ($proxy_username = settings_get('proxy_username', '')) {
+      $proxy_password = settings_get('proxy_password', '');
+      $http_options['headers']['Proxy-Authorization'] = 'Basic ' . base64_encode(
+        $proxy_username . (!empty($proxy_password) ? ":" . $proxy_password : '')
+      );
+    }
+  }
+
+  $mailchimp = new $classname($api_key, 'apikey', $http_options);
 
   return $mailchimp;
 }
 
 /**
- * Wrapper around mailchimp_get_lists() to return a single list.
+ * Gets a single MailChimp list by ID.
  *
  * @param string $list_id
  *   The unique ID of the list provided by MailChimp.
+ * @param bool $use_interest_groups
+ *   TRUE to load interest groups for the list.
+ * @param bool $reset
+ *   TRUE to reset list cache and load from MailChimp.
+ * @param bool $exclude_hidden_interest_groups
+ *   TRUE to exclude hidden interest groups for the list.
  *
- * @return array
- *   A list array formatted as indicated in the MailChimp API documentation.
+ * @return object
+ *   A MailChimp list object.
  */
-function mailchimp_get_list($list_id) {
-  $lists = mailchimp_get_lists(array($list_id));
-  return reset($lists);
+function mailchimp_get_list($list_id, $use_interest_groups = TRUE, $reset = FALSE, $exclude_hidden_interest_groups = TRUE) {
+  if (empty($list_id)) {
+    return NULL;
+  }
+
+  $cache = $reset ? NULL : cache_get('list-' . $list_id, 'cache_mailchimp');
+  if (!empty($cache)) {
+    // Use cached list only if interest group requirement is met.
+    if (!$use_interest_groups || ($use_interest_groups && isset($cache->data->intgroups))) {
+      return $cache->data;
+    }
+  }
+
+  $list = NULL;
+
+  try {
+    /* @var \Mailchimp\MailchimpLists $mc_lists */
+    $mc_lists = mailchimp_get_api_object('MailchimpLists');
+    if (!$mc_lists) {
+      throw new MailchimpException('Cannot get list without MailChimp API. Check API key has been entered.');
+    }
+
+    $list = $mc_lists->getList($list_id);
+
+    if (!empty($list)) {
+      // Add interest categories to the list.
+      $list->intgroups = mailchimp_get_interest_categories($list->id, $exclude_hidden_interest_groups, $reset);
+
+      // Add mergefields to the list.
+      $mergefields = $mc_lists->getMergeFields($list->id, array('count' => 500));
+      if ($mergefields->total_items > 0) {
+        $list->mergevars = $mergefields->merge_fields;
+      }
+    }
+
+    cache_set('list-' . $list_id, $list, 'cache_mailchimp', CACHE_PERMANENT);
+  }
+  catch (Exception $e) {
+    watchdog('mailchimp', 'An error occurred requesting list information from MailChimp. "%message"', array(
+      '%message' => $e->getMessage(),
+    ), WATCHDOG_ERROR);
+  }
+
+  return $list;
 }
 
 /**
- * Return all MailChimp lists for a given key. Lists are stored in the cache.
+ * Gets MailChimp lists. Can be filtered by an array of list IDs.
  *
  * @param array $list_ids
  *   An array of list IDs to filter the results by.
+ * @param bool $use_interest_groups
+ *   TRUE to load interest groups for the list.
  * @param bool $reset
- *   Force a cache reset.
+ *   TRUE to reset list cache and load from MailChimp.
+ * @param bool $exclude_hidden_interest_groups
+ *   TRUE to exclude hidden interest groups for the list.
  *
  * @return array
- *   An array of list arrays.
+ *   An array of MailChimp list objects.
  */
-function mailchimp_get_lists($list_ids = array(), $reset = FALSE) {
-  $cache = $reset ? NULL : cache_get('lists', 'cache_mailchimp');
-  $lists = array();
+function mailchimp_get_lists($list_ids = array(), $use_interest_groups = TRUE, $reset = FALSE, $exclude_hidden_interest_groups = TRUE) {
+  $cid = 'lists';
+  if (module_exists('domain')) {
+    $current_domain = domain_get_domain();
+    $cid .= ':' . $current_domain['machine_name'];
+  }
+  $cache = $reset ? NULL : cache_get($cid, 'cache_mailchimp');
   // Return cached lists:
   if ($cache) {
     $lists = $cache->data;
   }
   // Query lists from the MailChimp API and store in cache:
   else {
+    $lists = array();
+
     try {
       /* @var \Mailchimp\MailchimpLists $mc_lists */
       $mc_lists = mailchimp_get_api_object('MailchimpLists');
@@ -220,24 +314,11 @@ function mailchimp_get_lists($list_ids = array(), $reset = FALSE) {
 
       if ($result->total_items > 0) {
         foreach ($result->lists as $list) {
-          $int_category_data = $mc_lists->getInterestCategories($list->id, array('count' => 500));
-          if ($int_category_data->total_items > 0) {
-
-            $list->intgroups = array();
-            foreach ($int_category_data->categories as $interest_category) {
-              $interest_data = $mc_lists->getInterests($list->id, $interest_category->id, array('count' => 500));
-
-              if ($interest_data->total_items > 0) {
-                $interest_category->interests = $interest_data->interests;
-              }
-
-              $list->intgroups[] = $interest_category;
-            }
-          }
-
+          // Add interest categories to the list.
+          $list->intgroups = mailchimp_get_interest_categories($list->id, $exclude_hidden_interest_groups, $reset);
           $lists[$list->id] = $list;
 
-          // Append mergefields:
+          // Add mergefields to the list.
           $mergefields = $mc_lists->getMergeFields($list->id, array('count' => 500));
           if ($mergefields->total_items > 0) {
             $lists[$list->id]->mergevars = $mergefields->merge_fields;
@@ -245,7 +326,7 @@ function mailchimp_get_lists($list_ids = array(), $reset = FALSE) {
         }
       }
       uasort($lists, '_mailchimp_list_cmp');
-      cache_set('lists', $lists, 'cache_mailchimp', CACHE_TEMPORARY);
+      cache_set($cid, $lists, 'cache_mailchimp', CACHE_PERMANENT);
     }
     catch (Exception $e) {
       watchdog('mailchimp', 'An error occurred requesting list information from MailChimp. "%message"', array(
@@ -267,6 +348,135 @@ function mailchimp_get_lists($list_ids = array(), $reset = FALSE) {
     return $lists;
   }
 }
+
+/**
+ * Gets MailChimp interests categories.
+ *
+ * @param string $list_id
+ *   The unique ID of the list provided by MailChimp.
+ * @param bool $exclude_hidden
+ *   TRUE to exclude interest groups from the list.
+ * @param bool $reset
+ *   TRUE to reset interests cache and load from MailChimp.
+ *
+ * @return array
+ *   A MailChimp array of Interests Categories.
+ */
+function mailchimp_get_interest_categories($list_id, $exclude_hidden = TRUE, $reset = FALSE) {
+  $cache = $reset ? NULL : cache_get('interests-' . $list_id, 'cache_mailchimp');
+  // Return cached interest categories:
+  if ($cache) {
+    $interests = $cache->data;
+  } // Query interest categories from the MailChimp API and store in cache.
+  else {
+    $interests =[];
+
+    try {
+      /* @var \Mailchimp\MailchimpLists $mc_lists */
+      $mc_lists = mailchimp_get_api_object('MailchimpLists');
+      if (!$mc_lists) {
+        throw new MailchimpException('Cannot get lists without MailChimp API. Check API key has been entered.');
+      }
+
+      // Add interest categories to the list.
+      $interests_groups = $mc_lists->getInterestCategories($list_id, array('count' => 500));
+
+      if ($interests_groups->total_items > 0) {
+
+        foreach ($interests_groups->categories as $interest_category) {
+
+          if ( isset($interest_category->type) && $interest_category->type == 'hidden') {
+            continue;
+          }
+
+          $interest_data = mailchimp_get_interests($list_id, $interest_category->id, $reset);
+
+          if (!empty($interest_data)) {
+            $interest_category->interests = $interest_data;
+          }
+
+          $interests[] = $interest_category;
+        }
+
+      }
+
+      cache_set('interests-' . $list_id, $interests, 'cache_mailchimp', CACHE_PERMANENT);
+    }
+    catch (Exception $e) {
+      watchdog('mailchimp', 'An error occurred requesting interest information from MailChimp. "%message"', array(
+        '%message' => $e->getMessage(),
+      ), WATCHDOG_ERROR);
+    }
+  }
+
+  // Filter hidden interests. We loop here so we pull all interests and save to cache.
+  if ($exclude_hidden) {
+    $filtered_interests = array();
+    foreach ($interests as $interest) {
+      if ( isset($interest->type) && $interest->type != 'hidden') {
+        $filtered_interests[] = $interest;
+      }
+    }
+    return $filtered_interests;
+  }
+  else {
+    return $interests;
+  }
+}
+
+/**
+ * Gets MailChimp interests.
+ *
+ * @param string $list_id
+ *   The unique ID of the list provided by MailChimp.
+ * @param string $interest_category_id
+ *   The unique ID of the interest category provided by MailChimp.
+ * @param bool $reset
+ *   TRUE to reset interests cache and load from MailChimp.
+ *
+ * @return array
+ *   A MailChimp array of Interests.
+ */
+function mailchimp_get_interests($list_id, $interest_category_id, $reset = FALSE) {
+  $cid = 'interests-' . $list_id . '-' . $interest_category_id;
+  $cache = $reset ? NULL : cache_get($cid, 'cache_mailchimp');
+  // Return cached interests:
+  if ($cache) {
+    $interests = $cache->data;
+  } // Query interests from the MailChimp API and store in cache.
+  else {
+    $interests =[];
+
+    try {
+      /* @var \Mailchimp\MailchimpLists $mc_lists */
+      $mc_lists = mailchimp_get_api_object('MailchimpLists');
+      if (!$mc_lists) {
+        throw new MailchimpException('Cannot get lists without MailChimp API. Check API key has been entered.');
+      }
+
+      $interest_data = $mc_lists->getInterests($list_id, $interest_category_id, array('count' => 500));
+
+      if ($interest_data->total_items > 0) {
+        $interests = $interest_data->interests;
+      }
+
+      cache_set($cid, $interests, 'cache_mailchimp', CACHE_PERMANENT);
+    }
+    catch (Exception $e) {
+      watchdog(
+        'mailchimp',
+        'An error occurred requesting interest information from MailChimp. "%message"',
+        array(
+          '%message' => $e->getMessage(),
+        ),
+        WATCHDOG_ERROR
+      );
+    }
+  }
+
+  return $interests;
+}
+
 
 /**
  * Helper function used by uasort() to sort lists alphabetically by name.
@@ -483,8 +693,9 @@ function mailchimp_subscribe_process($list_id, $email, $merge_vars = NULL, $inte
     }
 
     $parameters = array(
-      // If double opt-in is required, set member status to 'pending'.
-      'status' => ($double_optin) ? \Mailchimp\MailchimpLists::MEMBER_STATUS_PENDING : \Mailchimp\MailchimpLists::MEMBER_STATUS_SUBSCRIBED,
+      // If double opt-in is required, set member status to 'pending', but only
+      // if the user isn't already subscribed.
+      'status' => ($double_optin && !mailchimp_is_subscribed($list_id, $email)) ? Mailchimp\MailchimpLists::MEMBER_STATUS_PENDING : Mailchimp\MailchimpLists::MEMBER_STATUS_SUBSCRIBED,
       'email_type' => $format,
     );
 
@@ -503,8 +714,6 @@ function mailchimp_subscribe_process($list_id, $email, $merge_vars = NULL, $inte
 
     if (isset($result->id)) {
       module_invoke_all('mailchimp_subscribe_user', $list_id, $email, $merge_vars);
-      // Clear user cache, just in case there's some cruft leftover:
-      mailchimp_cache_clear_member($list_id, $email);
       watchdog('mailchimp', '@email was subscribed to list @list.',
         array('@email' => $email, '@list' => $list_id), WATCHDOG_NOTICE
       );
@@ -519,6 +728,14 @@ function mailchimp_subscribe_process($list_id, $email, $merge_vars = NULL, $inte
     }
   }
   catch (Exception $e) {
+    if ($e->getCode() == '400' && strpos($e->getMessage(), 'Member In Compliance State') !== false && !$double_optin) {
+      watchdog('mailchimp', 'Detected "Member In Compliance State" subscribing @email to list @list.  Trying again using double-opt in.', array(
+        '@email' => $email,
+        '@list' => $list_id,
+      ), WATCHDOG_INFO);
+      return mailchimp_subscribe_process($list_id, $email, $merge_vars, $interests, TRUE, $format);
+    }
+
     watchdog('mailchimp', 'An error occurred subscribing @email to list @list. Status code @code. "%message"', array(
       '@email' => $email,
       '@list' => $list_id,
@@ -531,6 +748,12 @@ function mailchimp_subscribe_process($list_id, $email, $merge_vars = NULL, $inte
     $result->message = $e->getMessage();
   }
 
+  // Clear user cache, just in case there's some cruft leftover:
+  mailchimp_cache_clear_member($list_id, $email);
+
+  if ($double_optin) {
+    backdrop_set_message(t('Please check your email to confirm your subscription'), 'status', FALSE);
+  }
   return $result;
 }
 
@@ -556,19 +779,24 @@ function mailchimp_addto_queue($function, $args) {
 }
 
 /**
- * Updates the local cache for a user as though a queued request had been processed.
+ * Updates the local cache for a user as though a queued request had been
+ * processed.
  *
- * If we don't do this, then users can make changes, but not have them shown on the site until
- * cron runs, which is intensely confusing. See https://www.drupal.org/node/2503597
+ * If we don't do this, then users can make changes, but not have them shown on
+ * the site until cron runs, which is intensely confusing. See
+ * https://www.drupal.org/node/2503597
  *
- * @string $function
- *   The name of the function that the queue runner will call when the update is processed.
- * @array $args
+ * @param string $function
+ *   The name of the function that the queue runner will call when the update
+ *   is processed.
+ * @param array $args
  *   The list of args that will be passed to the queue runner.
+ *
+ * @return bool
  */
 function mailchimp_update_local_cache($function, $args) {
   $list_id = isset($args['list_id']) ? $args['list_id'] : NULL;
-  $email   = isset($args['email']) ? $args['email'] : NULL;
+  $email = isset($args['email']) ? $args['email'] : NULL;
   if (empty($list_id) || empty($email)) {
     return FALSE;
   }
@@ -593,8 +821,7 @@ function mailchimp_update_local_cache($function, $args) {
     $cache->status = 'subscribed';
   }
   // Handle member updates.
-  if ($function == 'mailchimp_update_member_process' ||
-      $function == 'mailchimp_subscribe_process') {
+  if ($function == 'mailchimp_update_member_process' || $function == 'mailchimp_subscribe_process') {
     // Update cached merge vars.
     if (!isset($cache->merge_fields)) {
       $cache->merge_fields = new stdClass();
@@ -605,10 +832,15 @@ function mailchimp_update_local_cache($function, $args) {
     // Update cached interests.
     $cache->interests = new stdClass();
     foreach ($args['interests'] as $interest_group => $interests) {
-      foreach ($interests as $interest_id => $value) {
-        if ($value !== 0) {
-          $cache->interests->$interest_id = TRUE;
+      if (is_array($interest_group)) {
+        foreach ($interests as $interest_id => $value) {
+          if ($value !== 0) {
+            $cache->interests->$interest_id = TRUE;
+          }
         }
+      }
+      elseif ($interests) {
+        $cache->interests->$interest_group = TRUE;
       }
     }
   }
@@ -624,7 +856,7 @@ function mailchimp_update_local_cache($function, $args) {
  * @return bool
  *   Success or failure.
  */
-function mailchimp_update_member($list_id, $email, $merge_vars, $interests, $format = 'html') {
+function mailchimp_update_member($list_id, $email, $merge_vars, $interests, $format = 'html', $double_optin = FALSE) {
   if (config_get('mailchimp.settings', 'cron')) {
     $args = array(
       'list_id' => $list_id,
@@ -632,11 +864,12 @@ function mailchimp_update_member($list_id, $email, $merge_vars, $interests, $for
       'merge_vars' => $merge_vars,
       'interests' => $interests,
       'format' => $format,
+      'double_optin' => $double_optin,
     );
     return mailchimp_addto_queue('mailchimp_update_member_process', $args);
   }
 
-  return mailchimp_update_member_process($list_id, $email, $merge_vars, $interests, $format);
+  return mailchimp_update_member_process($list_id, $email, $merge_vars, $interests, $format, $double_optin);
 }
 
 /**
@@ -647,7 +880,7 @@ function mailchimp_update_member($list_id, $email, $merge_vars, $interests, $for
  * @return bool
  *   Success or failure.
  */
-function mailchimp_update_member_process($list_id, $email, $merge_vars, $interests, $format) {
+function mailchimp_update_member_process($list_id, $email, $merge_vars, $interests, $format, $double_optin = FALSE) {
   $result = FALSE;
   try {
     /* @var \Mailchimp\MailchimpLists $mc_lists */
@@ -657,7 +890,7 @@ function mailchimp_update_member_process($list_id, $email, $merge_vars, $interes
     }
 
     $parameters = array(
-      'status' => 'subscribed',
+      'status' => ($double_optin) ? Mailchimp\MailchimpLists::MEMBER_STATUS_PENDING : Mailchimp\MailchimpLists::MEMBER_STATUS_SUBSCRIBED,
       'email_type' => $format,
     );
 
@@ -671,26 +904,8 @@ function mailchimp_update_member_process($list_id, $email, $merge_vars, $interes
       $parameters['merge_fields'] = (object) $merge_vars;
     }
 
-    // If email address has changed, unsubscribe and create new subscription.
-    // @see http://stackoverflow.com/questions/32224697/mailchimp-api-v3-0-change-subscriber-email
-    if (isset($parameters['merge_fields']->EMAIL) && ($email != $parameters['merge_fields']->EMAIL)) {
-      $result = $mc_lists->removeMember($list_id, $email);
-
-      watchdog('mailchimp', '@email was removed from list @list_id.', array(
-        '@email' => $email,
-        '@list' => $list_id,
-      ), WATCHDOG_NOTICE);
-
-      module_invoke_all('mailchimp_unsubscribe_user', $list_id, $email);
-
-      $email = $parameters['merge_fields']->EMAIL;
-
-      $result = $mc_lists->addOrUpdateMember($list_id, $email, $parameters);
-    }
-    else {
-      // Update member.
-      $result = $mc_lists->updateMember($list_id, $email, $parameters);
-    }
+    // Update member.
+    $result = $mc_lists->updateMember($list_id, $email, $parameters);
 
     if (!empty($result) && isset($result->id)) {
       watchdog('mailchimp', '@email was updated in list @list_id.', array(
@@ -708,11 +923,22 @@ function mailchimp_update_member_process($list_id, $email, $merge_vars, $interes
     }
   }
   catch (Exception $e) {
+    if ($e->getCode() == '400' && strpos($e->getMessage(), 'Member In Compliance State') !== false && !$double_optin) {
+      watchdog('mailchimp', 'Detected "Member In Compliance State" updating @email to list @list.  Trying again using double-opt in.', array(
+        '@email' => $email,
+        '@list' => $list_id,
+      ), WATCHDOG_INFO);
+      return mailchimp_update_member_process($list_id, $email, $merge_vars, $interests, $format, TRUE);
+    }
+
     watchdog('mailchimp', 'An error occurred updating @email on list @list. "%message"', array(
       '@email' => $email,
       '@list' => $list_id,
       '%message' => $e->getMessage(),
     ), WATCHDOG_ERROR);
+  }
+  if ($double_optin) {
+    backdrop_set_message(t('Please check your email to confirm your subscription'), 'status', FALSE);
   }
   return $result;
 }
@@ -734,7 +960,10 @@ function mailchimp_get_members($list_id, $status = 'subscribed', $options = arra
       }
 
       $options['status'] = $status;
-      $options['count'] = 500;
+
+      if (!isset($options['count']) || empty($options['count'])) {
+        $options['count'] = 500;
+      }
 
       $results = $mc_lists->getMembers($list_id, $options);
     }
@@ -815,12 +1044,12 @@ function mailchimp_unsubscribe_member($list_id, $email, $delete = FALSE, $goodby
       $result = mailchimp_addto_queue(
         'mailchimp_unsubscribe_process',
         array(
-          'list_id' => $list_id,
-          'email' => $email,
-          'delete' => $delete,
-          'goodbye' => $goodbye,
-          'notify' => $notify,
-        )
+        'list_id' => $list_id,
+        'email' => $email,
+        'delete' => $delete,
+        'goodbye' => $goodbye,
+        'notify' => $notify,
+      )
       );
     }
     else {
@@ -832,9 +1061,7 @@ function mailchimp_unsubscribe_member($list_id, $email, $delete = FALSE, $goodby
 }
 
 /**
- * Wrapper around Mailchimp_Lists::unsubscribe().
- *
- * @see Mailchimp_Lists::unsubscribe()
+ * Unsubscribe a member from a list.
  *
  * @return bool
  *   Success or failure.
@@ -847,7 +1074,25 @@ function mailchimp_unsubscribe_process($list_id, $email, $delete, $goodbye, $not
       throw new MailchimpException('Cannot unsubscribe from list without MailChimp API. Check API key has been entered.');
     }
 
-    $mc_lists->removeMember($list_id, $email);
+    if ($delete) {
+      // Remove member from list.
+      $mc_lists->removeMember($list_id, $email);
+      watchdog('mailchimp', '@email was removed from list @list_id.', array(
+        '@email' => $email,
+        '@list' => $list_id,
+      ), WATCHDOG_INFO);
+    }
+    else {
+      // Unsubscribe member.
+      $parameters = array(
+        'status' => MailchimpLists::MEMBER_STATUS_UNSUBSCRIBED,
+      );
+      $mc_lists->updateMember($list_id, $email, $parameters);
+      watchdog('mailchimp', '@email was unsubscribed from list @list_id.', array(
+        '@email' => $email,
+        '@list' => $list_id,
+      ), WATCHDOG_INFO);
+    }
 
     module_invoke_all('mailchimp_unsubscribe_user', $list_id, $email);
 
@@ -1051,7 +1296,8 @@ function mailchimp_segment_batch_add_subscribers($list_id, $segment_id, $batch) 
 }
 
 /**
- * Wrapper around MailchimpCampaigns->getCampaign() to return data for a given campaign.
+ * Wrapper around MailchimpCampaigns->getCampaign() to return data for a given
+ * campaign.
  *
  * Data is stored in the MailChimp cache.
  *
@@ -1357,16 +1603,28 @@ function mailchimp_webhook_url() {
  *   A collection of form elements, one per interest group.
  */
 function mailchimp_interest_groups_form_elements($list, $defaults = array(), $email = NULL) {
-  $return = array();
+  $return =[];
   foreach ($list->intgroups as $group) {
     if ($group->type == 'hidden') {
       continue;
     }
 
-    /* @var \Mailchimp\MailchimpLists $mc_lists */
-    $mc_lists = mailchimp_get_api_object('MailchimpLists');
+    try {
+      $interest_data = mailchimp_get_interests($list->id, $group->id);
+    }
+    catch (Exception $e) {
+      watchdog(
+        'mailchimp',
+        'An error occurred requesting interest groups for list @list. "%message"',
+        array(
+          '@list' => $list->id,
+          '%message' => $e->getMessage(),
+        ),
+        WATCHDOG_ERROR
+      );
 
-    $interest_data = $mc_lists->getInterests($list->id, $group->id, array('count' => 500));
+      return array();
+    }
 
     if (!empty($email)) {
       $memberinfo = mailchimp_get_memberinfo($list->id, $email);
@@ -1387,15 +1645,11 @@ function mailchimp_interest_groups_form_elements($list, $defaults = array(), $em
     }
 
     // Extract the field options:
-    $options = array();
-    if ($field_type == 'select') {
-      $options[''] = '-- select --';
-    }
-
-    $default_values = array();
+    $options =[];
+    $default_values =[];
 
     // Set interest options and default values.
-    foreach ($interest_data->interests as $interest) {
+    foreach ($interest_data as $interest) {
       $options[$interest->id] = $interest->name;
 
       if (isset($memberinfo)) {
@@ -1414,6 +1668,7 @@ function mailchimp_interest_groups_form_elements($list, $defaults = array(), $em
       '#type' => $field_type,
       '#title' => $group->title,
       '#options' => $options,
+      '#empty_option' => t('-- select --'),
       '#default_value' => isset($default_values[$group->id]) ? $default_values[$group->id] : array(),
       '#attributes' => array('class' => array('mailchimp-newsletter-interests-' . $list->id)),
     );
@@ -1430,15 +1685,22 @@ function mailchimp_interest_groups_form_elements($list, $defaults = array(), $em
  * @return array
  *   A properly formatted backdrop form element.
  */
-function mailchimp_insert_backdrop_form_tag($mergevar) {
+function mailchimp_insert_backdrop_form_tag($mergevar, $placeholder) {
   // Insert common FormAPI properties:
   $input = array(
-    '#title' => t('@mergevar', array('@mergevar' => $mergevar->name)),
     '#weight' => $mergevar->display_order,
     '#required' => $mergevar->required,
     '#default_value' => $mergevar->default_value,
   );
-
+  $placeholder_req = $mergevar->required ? ' *' : '';
+  $title = t('@mergevar', array('@mergevar' => $mergevar->name));
+  // Check to see if we should set placeholder or #title attribute
+  if ($placeholder) {
+    $input['#attributes']['placeholder'] = $title . $placeholder_req;
+  }
+  else {
+    $input['#title'] = $title;
+  }
   switch ($mergevar->type) {
     case 'address':
       // Sub-array of address elements according to MailChimp specs.
@@ -1446,35 +1708,45 @@ function mailchimp_insert_backdrop_form_tag($mergevar) {
       $input['#type'] = 'container';
       $input['#tree'] = TRUE;
       $input['addr1'] = array(
-        '#title' => t('Address 1'),
         '#type' => 'textfield',
       );
       $input['addr2'] = array(
-        '#title' => t('Address 2'),
         '#type' => 'textfield',
       );
       $input['city'] = array(
-        '#title' => t('City'),
         '#type' => 'textfield',
       );
       $input['state'] = array(
-        '#title' => t('State'),
         '#type' => 'textfield',
         '#size' => 2,
         '#maxlength' => 2,
       );
       $input['zip'] = array(
-        '#title' => t('Zip'),
         '#type' => 'textfield',
         '#size' => 6,
         '#maxlength' => 6,
       );
       $input['country'] = array(
-        '#title' => t('Country'),
         '#type' => 'textfield',
         '#size' => 2,
         '#maxlength' => 2,
       );
+      if (!$placeholder) {
+        $input['addr1']['#title'] = t('Address 1');
+        $input['addr2']['#title'] = t('Address 2');
+        $input['city']['#title'] = t('City');
+        $input['state']['#title'] = t('State');
+        $input['zip']['#title'] = t('Zip');
+        $input['country']['#title'] = t('Country');
+      }
+      else {
+        $input['addr1']['#attributes']['placeholder'] = t('Address 1') . $placeholder_req;
+        $input['addr2']['#attributes']['placeholder'] = t('Address 2') . $placeholder_req;
+        $input['city']['#attributes']['placeholder'] = t('City') . $placeholder_req;
+        $input['state']['#attributes']['placeholder'] = t('State') . $placeholder_req;
+        $input['zip']['#attributes']['placeholder'] = t('Zip') . $placeholder_req;
+        $input['country']['#attributes']['placeholder'] = t('Country') . $placeholder_req;
+      }
       break;
 
     case 'dropdown':
@@ -1514,24 +1786,44 @@ function mailchimp_insert_backdrop_form_tag($mergevar) {
       else {
         // Set to standard text type if 'emailfield' isn't defined:
         $input['#type'] = 'textfield';
-      };
-      $input['#size'] = $mergevar->options->size;
+        // Add validation - not necessary for emailfield type input because
+        // the "elements" module provides it for elements of type emailfield.
+        $input['#element_validate'] = array('mailchimp_validate_email');
+      }
+      $input['#size'] = isset($mergevar->options->size) ? $mergevar->options->size : 25;
+      break;
+
+    case 'phone':
+      $input['#type'] = 'textfield';
+      $input['#size'] = isset($mergevar->options->size) ? $mergevar->options->size : 25;
+      $input['#attributes']['type'] = 'tel';
       break;
 
     default:
       // This is a standard input[type=text] or something we can't handle with
       // Backdrop FormAPI.
       $input['#type'] = 'textfield';
-      $input['#size'] = $mergevar->options->size;
+      $input['#size'] = isset($mergevar->options->size) ? $mergevar->options->size : 25;
       break;
   }
 
   // Special cases for MailChimp hidden defined fields:
   if ($mergevar->public === FALSE) {
-    $input['#type'] = 'hidden';
+    $input['#access'] = FALSE;
   }
 
   return $input;
+}
+
+/**
+ * Form element validation for email input of #type 'textfield'.
+ *
+ * Note: #maxlength and #required are validated by _form_validate() already.
+ */
+function mailchimp_validate_email(&$element, &$form_state) {
+  if ($element['#value'] && !valid_email_address($element['#value'])) {
+    form_error($element, t('"%mail" is not a valid email address.', array('%mail' => $element['#value'])));
+  }
 }
 
 /**
@@ -1607,18 +1899,46 @@ function mailchimp_variable_info($options) {
  *   The entity that contains the values to use for token replacement.
  * @param string $entity_type
  *   The entity type of the entity being used.
+ * @param string $list_id
  *
  * @return mixed
  *   Associative array of MailChimp fields with values taken from the provided
  *   entity.
+ * @throws EntityMalformedException
  */
-function mailchimp_mergevars_populate($mergefields, $entity, $entity_type) {
+function mailchimp_mergevars_populate($mergefields, $entity, $entity_type, $list_id = NULL) {
+  // Get mergevar settings from the list.
+  $list_mergevars = array();
+  if (!empty($list_id)) {
+    $list = mailchimp_get_list($list_id, FALSE);
+
+    if (!empty($list) && isset($list->mergevars)) {
+      // Create array of mergevars indexed by tag. Used to map to mergefields.
+      foreach ($list->mergevars as $list_mergevar) {
+        $list_mergevars[$list_mergevar->tag] = $list_mergevar;
+      }
+    }
+  }
+
   $mergevars = backdrop_static(__FUNCTION__, array());
   list($id, $vid, $bundle) = entity_extract_ids($entity_type, $entity);
 
   if (!isset($mergevars[$bundle . ':' . $id])) {
     foreach ($mergefields as $key => $token) {
-      $mergevars[$bundle . ':' . $id][$key] = token_replace($token, array($entity_type => $entity), array('clear' => TRUE));
+      $mergevar_value = token_replace($token, array($entity_type => $entity), array('clear' => TRUE));
+
+      if (isset($list_mergevars[$key])) {
+        if ($list_mergevars[$key]->type == 'date') {
+          $mergevar_value = mailchimp_format_date($mergevar_value);
+        }
+        elseif ($list_mergevars[$key]->type == 'phone') {
+          $mergevar_value = mailchimp_format_phone_number($mergevar_value);
+        }
+      }
+
+      if (!empty($mergevar_value)) {
+        $mergevars[$bundle . ':' . $id][$key] = $mergevar_value;
+      }
     }
   }
 
@@ -1626,22 +1946,116 @@ function mailchimp_mergevars_populate($mergefields, $entity, $entity_type) {
 }
 
 /**
-* Implements hook_autoload_info().
-*/
-function mailchimp_autoload_info() {
-  return array(
-  'MailchimpException' => 'includes/mailchimp_exception.inc',
-  );
+ * Formats a phone number string before sending to MailChimp's API.
+ *
+ * Currently works only for USA and Canada phone numbers.
+ *
+ * @param string $input
+ *   The input phone number.
+ *
+ * @return string
+ *   The formatted phone number.
+ *
+ * @see http://kb.mailchimp.com/lists/growth/format-guidelines-for-your-import-file#phone
+ */
+function mailchimp_format_phone_number($input) {
+  $base_phone_number = preg_replace('/[^0-9]/s', '', $input);
+
+  // Only attempt to format ten-digit USA and Canada phone numbers.
+  if (strlen($base_phone_number) != 10) {
+    return $input;
+  }
+
+  // Convert phone number to format: "555-123-4567".
+  $formatted_number = substr($base_phone_number, 0, 3) . '-' . substr($base_phone_number, 3, 3) . '-' . substr($base_phone_number, 6);
+
+  return $formatted_number;
 }
 
 /**
-* Implements hook_config_info().
-*/
-function mailchimp_config_info() {
-  $prefixes['mailchimp.settings'] = array(
-  'label' => t('MailChimp settings'),
-  'group' => t('Configuration'),
-  );
-  return $prefixes;
+ * Formats a date string before sending to MailChimp's API.
+ *
+ * @param string $input
+ *   The input date.
+ *
+ * @return string
+ *   The formatted date.
+ *
+ * @see http://kb.mailchimp.com/lists/growth/format-guidelines-for-your-import-file#date
+ */
+function mailchimp_format_date($input) {
+  // Attempt to convert date string to a timestamp.
+  // Remove time in standard Backdrop date formats. It confuses strtotime().
+  $date = trim(preg_replace('/(- )?[0-9]+:[0-9]+/', '', $input));
+
+  $timestamp = strtotime($date);
+
+  if ($timestamp !== FALSE) {
+    // Return formatted date.
+    return date('Y-m-d', $timestamp);
+  }
+  else {
+    // Unable to parse the date string.
+    return NULL;
+  }
 }
 
+/**
+ * Implements hook_preprocess_page().
+ */
+function mailchimp_preprocess_page(&$variables) {
+  $config = config('mailchimp.settings');
+  // Insert JavaScript for MailChimp Connected Sites, if enabled.
+  if ($config->get('enable_connected') && mailchimp_get_api_object() && class_exists('\Mailchimp\MailchimpConnectedSites')) {
+    // Limit JavaScript embed to pre-configured paths.
+    $connected_site_paths = $config->get('connected_paths');
+    $valid_paths = explode("\r\n", $connected_site_paths);
+
+    $path = current_path();
+
+    if ((backdrop_is_front_page() && in_array('<front>', $valid_paths)) || in_array($path, $valid_paths)) {
+      $connected_site_id = $config->get('connected_id');
+
+      if (!empty($connected_site_id)) {
+        try {
+          /* @var \Mailchimp\MailchimpConnectedSites $mc_connected */
+          $mc_connected = mailchimp_get_api_object('MailchimpConnectedSites');
+
+          // Verify Connected Site exists on the MailChimp side and insert JS.
+          try {
+            $connected_site = $mc_connected->getConnectedSite($connected_site_id);
+            if (!empty($connected_site)) {
+
+              $mcjs = array(
+                '#type' => 'markup',
+                '#markup' => $connected_site->site_script->fragment,
+              );
+
+              backdrop_add_html_head($mcjs, 'mcjs');
+            }
+          }
+          catch (Exception $e) {
+            // Throw exception only for errors other than member not found.
+            if ($e->getCode() != 404) {
+              throw new Exception($e->getMessage(), $e->getCode(), $e);
+            }
+          }
+        }
+        catch (Exception $e) {
+          watchdog('mailchimp', 'An error occurred requesting connected site information. "%message"', array(
+            '%message' => $e->getMessage(),
+          ), WATCHDOG_ERROR);
+        }
+      }
+    }
+  }
+}
+
+/**
+ * Implements hook_autoload_info().
+ */
+function mailchimp_autoload_info() {
+  return array(
+    'MailchimpException' => 'includes/mailchimp_exception.inc',
+  );
+}

@@ -1,7 +1,10 @@
 {
     "_config_name": "mailchimp.settings",
-	"cron": false,
-	"batch_limit": 100,
-	"test_mode": false,
-	"api_key": ""
+    "enable_connected": 1,
+    "connected_id": false,
+    "connected_paths": false,
+    "cron": 0,
+    "batch_limit": 100,
+    "test_mode": false,
+    "api_key": ""
 }

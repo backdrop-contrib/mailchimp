@@ -101,3 +101,24 @@ function mailchimp_activity_schema() {
 
   return $schema;
 }
+
+/**
+ * Implements hook_update_last_removed().
+ */
+function mailchimp_activity_update_last_removed() {
+  return;
+}
+
+/**
+ * Implements hook_update_N().
+ */
+function mailchimp_activity_update_1000() {
+  $config = config('mailchimp_activity.settings');
+}
+
+/**
+ * Implements hook_install().
+ */
+function mailchimp_activity_install() {
+  // Dynamically generated variable data was detected.
+}

@@ -108,3 +108,24 @@ function mailchimp_automations_schema() {
 
   return $schema;
 }
+
+/**
+ * Implements hook_update_last_removed().
+ */
+function mailchimp_automations_update_last_removed() {
+  return;
+}
+
+/**
+ * Implements hook_update_N().
+ */
+function mailchimp_automations_update_1000() {
+  $config = config('mailchimp_automations.settings');
+}
+
+/**
+ * Implements hook_install().
+ */
+function mailchimp_automations_install() {
+  // Dynamically generated variable data was detected.
+}

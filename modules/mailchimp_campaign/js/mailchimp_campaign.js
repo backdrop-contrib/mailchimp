@@ -5,16 +5,16 @@
 
 (function ($) {
 
-  Backdrop.behaviors.mailchimp_campaign = {
+  Drupal.behaviors.mailchimp_campaign = {
     attach:function (context, settings) {
       google.load("visualization", "1", {packages:["corechart"], "callback":drawCharts});
 
       function drawCharts() {
         var dataTable = new google.visualization.DataTable();
-        dataTable.addColumn('datetime', Backdrop.t('Date'));
-        dataTable.addColumn('number', Backdrop.t('Emails sent'));
-        dataTable.addColumn('number', Backdrop.t('Unique opens'));
-        dataTable.addColumn('number', Backdrop.t('Clicks'));
+        dataTable.addColumn('datetime', Drupal.t('Date'));
+        dataTable.addColumn('number', Drupal.t('Emails sent'));
+        dataTable.addColumn('number', Drupal.t('Unique opens'));
+        dataTable.addColumn('number', Drupal.t('Clicks'));
 
         for (var key in settings.mailchimp_campaign.stats) {
           dataTable.addRow([

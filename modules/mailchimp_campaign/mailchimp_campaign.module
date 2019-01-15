@@ -214,14 +214,14 @@ function mailchimp_campaign_access(MailChimpCampaign $campaign, $sent = TRUE) {
  */
 function mailchimp_campaign_overview_page() {
   $campaigns = mailchimp_campaign_load_multiple();
-  $templates = mailchimp_campaign_list_templates();
+  $templates = mailchimp_campaign_list_templates(FALSE, 0, 500);
 
   $rows = array();
   foreach ($campaigns as $campaign) {
     $actions = array();
     $actions[] = l(t('View Archive'), $campaign->mc_data->archive_url, array('attributes' => array('target' => '_blank')));
     $actions[] = l(t('View'), 'admin/config/services/mailchimp/campaigns/' . $campaign->mc_campaign_id);
-    if($campaign->mc_data->status == 'save') {
+    if ($campaign->mc_data->status == 'save') {
       $actions[] = l(t('Send'), 'admin/config/services/mailchimp/campaigns/' . $campaign->mc_campaign_id . '/send');
     }
     else {
@@ -244,8 +244,8 @@ function mailchimp_campaign_overview_page() {
       $campaign->mc_data->status,
       l($campaign->list->name, 'https://admin.mailchimp.com/lists/',
         array(
-          'attributes' => array('target' => '_blank'),
-        )),
+        'attributes' => array('target' => '_blank'),
+      )),
       ($campaign_template != NULL) ? $campaign_template->name : '',
       format_date(strtotime($campaign->mc_data->create_time), 'custom', 'F j, Y - g:ia'),
       implode(' | ', $actions),
@@ -331,7 +331,8 @@ function mailchimp_campaign_save_campaign($template, $recipients, $settings, $te
       'id' => (int) $template_id,
       'sections' => (object) $content['sections'],
     );
-  } else if (isset($content['html'])) {
+  }
+  else if (isset($content['html'])) {
     // Use HTML as campaign content.
     $content_parameters['html'] = $content['html'];
   }
@@ -348,7 +349,7 @@ function mailchimp_campaign_save_campaign($template, $recipients, $settings, $te
         throw new MailchimpException('Cannot create campaign without Mailchimp API. Check API key has been entered.');
       }
 
-      $result = $mc_campaigns->addCampaign(\Mailchimp\MailchimpCampaigns::CAMPAIGN_TYPE_REGULAR, $recipients, $settings);
+      $result = $mc_campaigns->addCampaign(Mailchimp\MailchimpCampaigns::CAMPAIGN_TYPE_REGULAR, $recipients, $settings);
 
       if (!empty($result->id)) {
         $campaign_id = $result->id;
@@ -359,7 +360,7 @@ function mailchimp_campaign_save_campaign($template, $recipients, $settings, $te
       backdrop_set_message($e->getMessage(), 'error');
       watchdog('mailchimp_campaign', 'An error occurred while creating this campaign: %message', array(
         '%message' => $e->getMessage(),
-        ), WATCHDOG_ERROR);
+      ), WATCHDOG_ERROR);
       return NULL;
     }
 
@@ -372,7 +373,7 @@ function mailchimp_campaign_save_campaign($template, $recipients, $settings, $te
         throw new MailchimpException('Cannot update campaign without Mailchimp API. Check API key has been entered.');
       }
 
-      $result = $mc_campaigns->updateCampaign($campaign_id, \Mailchimp\MailchimpCampaigns::CAMPAIGN_TYPE_REGULAR, $recipients, $settings);
+      $result = $mc_campaigns->updateCampaign($campaign_id, Mailchimp\MailchimpCampaigns::CAMPAIGN_TYPE_REGULAR, $recipients, $settings);
 
       if (!empty($result->id)) {
         $mc_campaigns->setCampaignContent($result->id, $content_parameters);
@@ -382,7 +383,7 @@ function mailchimp_campaign_save_campaign($template, $recipients, $settings, $te
       backdrop_set_message($e->getMessage(), 'error');
       watchdog('mailchimp_campaign', 'An error occurred while updating this campaign: %message', array(
         '%message' => $e->getMessage(),
-        ), WATCHDOG_ERROR);
+      ), WATCHDOG_ERROR);
       return NULL;
     }
 
@@ -440,7 +441,7 @@ function mailchimp_campaign_send_campaign(MailChimpCampaign $campaign) {
     backdrop_set_message($e->getMessage(), 'error');
     watchdog('mailchimp_campaign', 'An error occurred while sending to this campaign: %message', array(
       'message' => $e->getMessage(),
-      ), WATCHDOG_ERROR);
+    ), WATCHDOG_ERROR);
   }
 
   return FALSE;
@@ -458,13 +459,13 @@ function mailchimp_campaign_send_test_campaign(MailChimpCampaign $campaign, $rec
       throw new MailchimpException('Cannot send campaign without Mailchimp API. Check API key has been entered.');
     }
 
-    $mc_campaigns->sendTest($campaign->mc_campaign_id, $recipients, \Mailchimp\MailchimpCampaigns::EMAIL_TYPE_HTML);
+    $mc_campaigns->sendTest($campaign->mc_campaign_id, $recipients, Mailchimp\MailchimpCampaigns::EMAIL_TYPE_HTML);
 
     // Log action, and notify the user.
     watchdog('mailchimp_campaign', 'MailChimp test message for campaign %name has been sent to %recipients.', array(
       '%name' => $campaign->label(),
       '%recipients' => implode(', ', $recipients),
-      ), WATCHDOG_INFO);
+    ), WATCHDOG_INFO);
 
     return TRUE;
   }
@@ -472,7 +473,7 @@ function mailchimp_campaign_send_test_campaign(MailChimpCampaign $campaign, $rec
     backdrop_set_message($e->getMessage(), 'error');
     watchdog('mailchimp_campaign', 'An error occurred while sending a test of this campaign: %message', array(
       '%message' => $e->getMessage(),
-      ), WATCHDOG_ERROR);
+    ), WATCHDOG_ERROR);
   }
 
   return FALSE;
@@ -497,7 +498,7 @@ function mailchimp_campaign_delete_campaign($cid) {
 
     watchdog('mailchimp_campaign', 'MailChimp campaign %cid was deleted.', array(
       '%cid' => $cid,
-      ), WATCHDOG_INFO);
+    ), WATCHDOG_INFO);
 
     return TRUE;
   }
@@ -505,7 +506,7 @@ function mailchimp_campaign_delete_campaign($cid) {
     backdrop_set_message($e->getMessage(), 'error');
     watchdog('mailchimp_campaign', 'An error occurred while deleting this campaign: %message', array(
       '%message' => $e->getMessage(),
-      ), WATCHDOG_ERROR);
+    ), WATCHDOG_ERROR);
     return FALSE;
   }
 
@@ -517,12 +518,21 @@ function mailchimp_campaign_delete_campaign($cid) {
  *
  * @param bool $reset
  *   True if templates should not be loaded from cache.
+ * @param int $offset
+ *   The number of templates to skip.
+ * @param int $count
+ *   The number of templates to return.
+ * @param string $type
+ *   The template type to limit results to.
+ * @param int $folder_id
+ *   The template folder ID to limit results to.
  *
  * @return mixed
  *   Array listing existing Mailchimp templates by type.
  */
-function mailchimp_campaign_list_templates($reset = FALSE) {
-  $cache = $reset ? NULL : cache_get('templates', 'cache_mailchimp');
+function mailchimp_campaign_list_templates($reset = FALSE, $offset = 0, $count = 10, $type = NULL, $folder_id = NULL) {
+  $cache_key = 'templates-' . $offset . '-' . $count . '-' . $type . '-' . $folder_id;
+  $cache = ($reset) ? NULL : cache_get($cache_key, 'cache_mailchimp');
   $all_templates = array();
   // Return cached templates:
   if ($cache) {
@@ -532,26 +542,29 @@ function mailchimp_campaign_list_templates($reset = FALSE) {
   else {
     /* @var \Mailchimp\MailchimpTemplates $mc_templates */
     if ($mc_templates = mailchimp_get_api_object('MailchimpTemplates')) {
-      $template_types = array(
-        'user',
-        'base',
-        'gallery',
+      $template_params = array(
+        'offset' => $offset,
+        'count' => $count,
       );
 
-      foreach ($template_types as $type) {
-        $all_templates[$type] = array();
+      if ($type != NULL) {
+        $template_params['type'] = $type;
+      }
 
-        $response = $mc_templates->getTemplates(array('type' => $type));
+      if ($folder_id != NULL) {
+        $template_params['folder_id'] = $folder_id;
+      }
 
-        if ($response->total_items > 0) {
-          foreach ($response->templates as $template) {
-            $all_templates[$type][$template->id] = $template;
-          }
+      $response = $mc_templates->getTemplates($template_params);
+
+      if ($response->total_items > 0) {
+        foreach ($response->templates as $template) {
+          $all_templates[$template->type][$template->id] = $template;
         }
       }
     }
 
-    cache_set('templates', $all_templates, 'cache_mailchimp', CACHE_TEMPORARY);
+    cache_set($cache_key, $all_templates, 'cache_mailchimp', CACHE_TEMPORARY);
   }
   return $all_templates;
 }
@@ -560,7 +573,7 @@ function mailchimp_campaign_list_templates($reset = FALSE) {
  * Return full details for a Mailchimp Template.
  *
  * @param string $template_id
- *   Optional template ID. Set to return a single MailChimp template.
+ *   The ID of the template.
  * @param bool $reset
  *   True if templates should not be loaded from cache.
  *
@@ -568,26 +581,24 @@ function mailchimp_campaign_list_templates($reset = FALSE) {
  *   An array with all configuration and content for a Mailchimp Template.
  */
 function mailchimp_campaign_get_template($template_id, $reset = FALSE) {
-  $all_templates = mailchimp_campaign_list_templates($reset);
-  foreach ($all_templates as $type) {
-    if (isset($type[$template_id])) {
-      $template = $type[$template_id];
-      // Get template details from cache or the MailChimp API.
-      $cache = $reset ? NULL : cache_get('template_' . $template_id, 'cache_mailchimp');
-      if ($cache) {
-        $template->info = $cache->data;
-      }
-      else {
-        /* @var \Mailchimp\MailchimpTemplates $mc_templates */
-        if ($mc_templates = mailchimp_get_api_object('MailchimpTemplates')) {
+  $template = NULL;
+  if (!empty($template_id)) {
+    $cache = $reset ? NULL : cache_get('mc_template_' . $template_id, 'cache_mailchimp');
+    if ($cache) {
+      $template = $cache->data;
+    }
+    else {
+      if ($mc_templates = mailchimp_get_api_object('MailchimpTemplates')) {
+        $template = $mc_templates->getTemplate($template_id);
+        if (!empty($template)) {
           $template->info = $mc_templates->getTemplateContent($template_id);
-          cache_set('template_' . $template_id, $template->info, 'cache_mailchimp', CACHE_TEMPORARY);
+          cache_set('mc_template_' . $template_id, $template, 'cache_mailchimp', CACHE_TEMPORARY);
         }
       }
-      return $template;
     }
   }
-  return NULL;
+
+  return $template;
 }
 
 /**
@@ -764,7 +775,7 @@ function mailchimp_campaign_stats_page(MailChimpCampaign $campaign) {
     backdrop_set_message($e->getMessage(), 'error');
     watchdog('mailchimp_campaign', 'An error occurred getting report data from MailChimp: %message', array(
       '%message' => $e->getMessage(),
-      ), WATCHDOG_ERROR);
+    ), WATCHDOG_ERROR);
     return NULL;
   }
 
@@ -868,8 +879,8 @@ function mailchimp_campaign_get_campaigns($campaign_ids, $reset = FALSE) {
   $cached_campaigns = cache_get('campaigns', 'cache_mailchimp');
   foreach ($campaign_ids as $id) {
     if (!isset($cached_campaigns->data[$id])
-      || ($cached_campaigns->data[$id]->status == MAILCHIMP_STATUS_SENDING)
-      || $reset) {
+        || ($cached_campaigns->data[$id]->status == MAILCHIMP_STATUS_SENDING)
+        || $reset) {
       $to_refresh[] = $id;
     }
     else {
@@ -886,7 +897,20 @@ function mailchimp_campaign_get_campaigns($campaign_ids, $reset = FALSE) {
       }
 
       foreach ($to_refresh as $campaign_id) {
-        $response = $mc_campaigns->getCampaign($campaign_id);
+        try {
+          $response = $mc_campaigns->getCampaign($campaign_id);
+        }
+        catch (Exception $e) {
+          $message = t('An error occurred while getting campaign %campaign_id. Would you like to <a href="@administer-page">delete it</a>?', array(
+            '%campaign_id' => $campaign_id,
+            '@administer-page' => url('admin/config/services/mailchimp/campaigns/' . $campaign_id . '/delete'),
+          ));
+          backdrop_set_message($message, 'error');
+          watchdog('mailchimp_campaign', 'An error occurred while getting campaign %campaign_id:  %message', array(
+            '%campaign_id' => $campaign_id,
+            '%message' => $e->getMessage(),
+          ), WATCHDOG_ERROR);
+        }
 
         if (!empty($response->id)) {
           $campaigns[$response->id] = $response;
@@ -897,7 +921,7 @@ function mailchimp_campaign_get_campaigns($campaign_ids, $reset = FALSE) {
       backdrop_set_message($e->getMessage(), 'error');
       watchdog('mailchimp_campaign', 'An error occurred while getting campaigns: %message', array(
         '%message' => $e->getMessage(),
-        ), WATCHDOG_ERROR);
+      ), WATCHDOG_ERROR);
       return NULL;
     }
 
@@ -941,7 +965,7 @@ function mailchimp_campaign_get_list_segments($list_id, $type) {
     watchdog('mailchimp_campaign', 'An error occurred getting list segments for list ID %list_id: %message', array(
       '%list_id' => $list_id,
       '%message' => $e->getMessage(),
-      ), WATCHDOG_ERROR);
+    ), WATCHDOG_ERROR);
     return NULL;
   }
 }
@@ -974,7 +998,7 @@ function mailchimp_test_list_segment($list_id, $list_segment_id) {
     backdrop_set_message($e->getMessage(), 'error');
     watchdog('mailchimp_campaign', 'An error occurred testing a list segment: %message', array(
       '%message' => $e->getMessage(),
-      ), WATCHDOG_ERROR);
+    ), WATCHDOG_ERROR);
     return NULL;
   }
 }
@@ -1040,11 +1064,11 @@ function mailchimp_campaign_view($campaign) {
 }
 
 /**
-* Implements hook_autoload_info().
-*/
+ * Implements hook_autoload_info().
+ */
 function mailchimp_campaign_autoload_info() {
   return array(
-  'MailChimpCampaignController' => 'includes/mailchimp_campaign.controller.inc',
-  'MailChimpCampaign' => 'includes/mailchimp_campaign.entity.inc',
+    'MailChimpCampaignController' => 'includes/mailchimp_campaign.controller.inc',
+    'MailChimpCampaign' => 'includes/mailchimp_campaign.entity.inc',
   );
 }

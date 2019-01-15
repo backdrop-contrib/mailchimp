@@ -13,7 +13,7 @@ function mailchimp_activity_entity_info() {
     'mailchimp_activity_entity' => array(
       'label' => t('MailChimp Activity Entity'),
       'plural label' => t('MailChimp Activity Entities'),
-      'controller class' => 'EMWController',
+      'controller class' => 'EntityAPIControllerExportable',
       'entity class' => 'MailchimpActivityEntity',
       'base table' => 'mailchimp_activity_entity',
       'uri callback' => 'entity_class_uri',
@@ -95,14 +95,7 @@ function mailchimp_activity_access(MailchimpActivityEntity $mailchimp_activity_e
  *   Array of MailchimpActivityEntity instances or one instance if $name is set.
  */
 function mailchimp_activity_load_entities($name = NULL) {
-  // $types = entity_load_multiple_by_name('mailchimp_activity_entity', isset($name) ? array($name) : FALSE);
-  $names = isset($name) ? array($name) : FALSE;
-  $entities = entity_load('mailchimp_activity_entity', $names);
-  $info = entity_get_info($entity_type);
-  if (!isset($info['entity keys']['name'])) {
-    return $entities;
-  }
-  $types = entity_key_array_by_property($entities, $info['entity keys']['name']);
+  $types = entity_load_multiple_by_name('mailchimp_activity_entity', isset($name) ? array($name) : FALSE);
   return isset($name) ? reset($types) : $types;
 }
 
@@ -152,7 +145,7 @@ function mailchimp_activity_get_member_activity($list_id, $email, $reset = FALSE
       watchdog('mailchimp_activity', 'An error occurred while getting activity for email "%email": %message', array(
         '%email' => $email,
         '%message' => $e->getMessage(),
-        ), WATCHDOG_ERROR);
+      ), WATCHDOG_ERROR);
       return NULL;
     }
   }
@@ -208,7 +201,9 @@ function mailchimp_activity_page($entity, MailchimpActivityEntity $mailchimp_act
 
   /* @var \Mailchimp\MailchimpCampaigns $mc_campaigns */
   $mc_campaigns = mailchimp_get_api_object('MailchimpCampaigns');
-  $result = $mc_campaigns->getCampaigns();
+  // TODO: Campaign limit is set high because all campaigns need to be
+  // retrieved here. This function should be refactored to be more efficient.
+  $result = $mc_campaigns->getCampaigns(array('count' => 500));
   $campaigns = ($result->total_items > 0) ? $result->campaigns : array();
 
   $campaign_index = array();
@@ -314,11 +309,11 @@ function mailchimp_activity_permission() {
 }
 
 /**
-* Implements hook_autoload_info().
-*/
+ * Implements hook_autoload_info().
+ */
 function mailchimp_activity_autoload_info() {
   return array(
-  'MailchimpActivityEntity' => 'includes/mailchimp_activity.entity.inc',
-  'MailChimpActivityUIController' => 'includes/mailchimp_activity.ui_controller.inc',
+    'MailchimpActivityEntity' => 'includes/mailchimp_activity.entity.inc',
+    'MailChimpActivityUIController' => 'includes/mailchimp_activity.ui_controller.inc',
   );
 }

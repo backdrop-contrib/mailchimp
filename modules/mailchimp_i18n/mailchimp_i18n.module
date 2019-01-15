@@ -51,3 +51,13 @@ function mailchimp_i18n_mailchimp_signup_update($mailchimp_signup) {
 function mailchimp_i18n_mailchimp_type_delete($mailchimp_signup) {
   i18n_string_object_remove('mailchimp_signup', $mailchimp_signup);
 }
+
+/**
+ * Implements hook_autoload_info().
+ */
+function mailchimp_i18n_autoload_info() {
+  return array(
+    'MailchimpI18nStringController' => 'mailchimp_i18n.i18n.inc',
+    'MailchimpI18nStringObjectWrapper' => 'mailchimp_i18n.i18n.inc',
+  );
+}

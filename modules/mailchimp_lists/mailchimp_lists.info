@@ -2,7 +2,11 @@ name = MailChimp Lists
 description = Manage and integrate MailChimp lists.
 package = MailChimp
 backdrop = 1.x
+type = module
 dependencies[] = mailchimp
+dependencies[] = entity
+;dependencies[] = entity_token
 dependencies[] = options
 
 configure = admin/config/services/mailchimp/lists
+

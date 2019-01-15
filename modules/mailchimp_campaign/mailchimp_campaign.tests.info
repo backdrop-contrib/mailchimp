@@ -1,0 +1,6 @@
+[MailchimpCampaignsTestCase]
+name = MailChimp Campaigns
+description = Test Campaigns Logic.
+group = MailChimp
+file = tests/mailchimp_campaigns.test
+

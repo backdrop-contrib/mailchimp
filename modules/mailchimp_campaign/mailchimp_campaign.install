@@ -70,4 +70,19 @@ function mailchimp_campaign_install() {
     $mailchimp_campaign_format = (object) $mailchimp_campaign_format;
     filter_format_save($mailchimp_campaign_format);
   }
+  // Dynamically generated variable data was detected on the following lines.
+}
+
+/**
+ * Implements hook_update_last_removed().
+ */
+function mailchimp_campaign_update_last_removed() {
+  return;
+}
+
+/**
+ * Implements hook_update_N().
+ */
+function mailchimp_campaign_update_1000() {
+  $config = config('mailchimp_campaign.settings');
 }

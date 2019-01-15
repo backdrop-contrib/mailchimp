@@ -8,10 +8,10 @@
  * Returns a form for creating a campaign.
  */
 function mailchimp_campaign_campaign_form($form, &$form_state, MailChimpCampaign $campaign = NULL) {
+  $config = config('mailchimp_campaign.settings');
   $path = backdrop_get_path('module', 'mailchimp_campaign');
   backdrop_add_js($path . '/js/mailchimp_campaign.utils.js', 'file');
   backdrop_add_css($path . '/mailchimp_campaign.css', 'file');
-  $site_mail = config_get('system.core', 'site_mail');
 
   $form_state['campaign'] = $campaign;
   $form['title'] = array(
@@ -76,7 +76,7 @@ function mailchimp_campaign_campaign_form($form, &$form_state, MailChimpCampaign
     '#type' => 'textfield',
     '#title' => t('From Email'),
     '#description' => t('the From: email address for your campaign message.'),
-    '#default_value' => ($campaign) ? $campaign->mc_data->settings->reply_to : $site_mail,
+    '#default_value' => ($campaign) ? $campaign->mc_data->settings->reply_to : config_get('system.performance', 'site_mail'),
     '#size' => 40,
     '#maxlength' => 255,
     '#required' => TRUE,
@@ -85,7 +85,7 @@ function mailchimp_campaign_campaign_form($form, &$form_state, MailChimpCampaign
     '#type' => 'textfield',
     '#title' => t('From Name'),
     '#description' => t('the From: name for your campaign message (not an email address)'),
-    '#default_value' => ($campaign) ? $campaign->mc_data->settings->from_name : $site_mail,
+    '#default_value' => ($campaign) ? $campaign->mc_data->settings->from_name : config_get('system.performance', 'site_name'),
     '#size' => 40,
     '#maxlength' => 255,
   );
@@ -98,7 +98,7 @@ function mailchimp_campaign_campaign_form($form, &$form_state, MailChimpCampaign
     '#type' => 'select',
     '#title' => t('Template'),
     '#description' => t('Select a MailChimp user template to use. Due to a limitation in the API, only templates that do not contain repeating sections are available. If empty, the default template will be applied.'),
-    '#options' => _mailchimp_campaign_build_option_list(mailchimp_campaign_list_templates(), '-- Select --', $template_type_labels),
+    '#options' => _mailchimp_campaign_build_option_list(mailchimp_campaign_list_templates(FALSE, 0, 500), '-- Select --', $template_type_labels),
     '#default_value' => ($campaign) ? $campaign->mc_data->settings->template_id : -1,
     '#ajax' => array(
       'callback' => 'mailchimp_campaign_template_callback',
@@ -420,7 +420,7 @@ function mailchimp_campaign_get_merge_vars_form_elements($merge_vars, $list_name
     '#type' => 'container',
     '#attributes' => array(
       'class' => array(
-        'merge-vars-wrapper'
+        'merge-vars-wrapper',
       ),
     ),
   );
@@ -432,11 +432,11 @@ function mailchimp_campaign_get_merge_vars_form_elements($merge_vars, $list_name
     '#description' => t(
       'Insert merge variables from the %list_name list or one of the !standard_link.',
       array(
-        '%list_name' => $list_name,
-        '!standard_link' => l(
+      '%list_name' => $list_name,
+      '!standard_link' => l(
           t('standard MailChimp merge variables'), 'http://kb.mailchimp.com/article/all-the-merge-tags-cheatsheet',
           array('attributes' => array('target' => '_blank'))),
-      )
+    )
     ),
   );
 

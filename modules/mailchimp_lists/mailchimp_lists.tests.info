@@ -1,0 +1,6 @@
+[MailchimpListsTestCase]
+name = MailChimp Lists
+description = Test Lists Logic.
+group = MailChimp
+file = tests/mailchimp_lists.test
+

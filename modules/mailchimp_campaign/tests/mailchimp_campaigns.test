@@ -4,7 +4,7 @@
  * Test class and methods for the Mailchimp Campaigns module.
  */
 
-class MailchimpCampaignsTestCase extends BackdropWebTestCase {
+class MailchimpCampaignsTestCase extends DrupalWebTestCase {
 
   /**
    * Returns info displayed in the test interface.
@@ -30,7 +30,7 @@ class MailchimpCampaignsTestCase extends BackdropWebTestCase {
    */
   protected function setUp() {
     // Use a profile that contains required modules:
-    $prof = backdrop_get_profile();
+    $prof = drupal_get_profile();
     $this->profile = $prof;
     // Enable modules required for the test.
     $enabled_modules = array(
@@ -41,10 +41,8 @@ class MailchimpCampaignsTestCase extends BackdropWebTestCase {
       'mailchimp_campaign',
     );
     parent::setUp($enabled_modules);
-    $config = config('mailchimp.settings');
-    $config->set('api_key', 'MAILCHIMP_TEST_API_KEY');
-    $config->set('test_mode', TRUE);
-    $config->save();
+    variable_set('mailchimp_api_key', 'MAILCHIMP_TEST_API_KEY');
+    variable_set('mailchimp_test_mode', TRUE);
   }
 
   /**
@@ -54,9 +52,7 @@ class MailchimpCampaignsTestCase extends BackdropWebTestCase {
    */
   protected function tearDown() {
     parent::tearDown();
-    $config = config('mailchimp.settings');
-    $config->clear('test_mode');
-    $config->save();
+    variable_del('mailchimp_test_mode');
   }
 
   /**

@@ -60,9 +60,40 @@ function mailchimp_requirements($phase) {
         'severity' => REQUIREMENT_ERROR,
       );
     }
+
+    // Notify user to update MailChimp library if using version 1.0.6 or lower.
+    if (empty($library['error'])) {
+      $version_int = (int) str_replace('.', '', $library['version']);
+
+      if ($version_int <= 106) {
+        $requirements['mailchimp']['value'] = $library['version'];
+        $requirements['mailchimp']['description'] = $t('Please update the <a href="https://github.com/thinkshout/mailchimp-api-php/releases">MailChimp library</a> to at least version 1.0.7 to ensure continued stability.');
+        $requirements['mailchimp']['severity'] = REQUIREMENT_WARNING;
+      }
+    }
+
   }
 
   return $requirements;
+}
+
+/**
+ * Implements hook_uninstall().
+ */
+function mailchimp_uninstall() {
+  config_clear('mailchimp.settings', 'api_key');
+  config_clear('mailchimp.settings', 'batch_limit');
+  $queue = BackdropQueue::get(MAILCHIMP_QUEUE_CRON);
+  $queue->deleteQueue();
+  $queue = BackdropQueue::get(MAILCHIMP_BATCH_QUEUE_CRON);
+  $queue->deleteQueue();
+}
+
+/**
+ * Implements hook_update_last_removed().
+ */
+function mailchimp_update_last_removed() {
+  return;
 }
 
 /**
@@ -70,24 +101,25 @@ function mailchimp_requirements($phase) {
  */
 function mailchimp_update_1000() {
   $config = config('mailchimp.settings');
-  $config->set('cron', update_variable_get('mailchimp_cron', false));
-  $config->set('batch_limit', update_variable_get('mailchimp_batch_limit', 100));
-  $config->set('test_mode', update_variable_get('mailchimp_test_mode', false));
   $config->set('api_key', update_variable_get('mailchimp_api_key', ''));
-  $config->save();
-
+  $config->set('enable_connected', update_variable_get('mailchimp_enable_connected', 'FALSE'));
+  $config->set('connected_id', update_variable_get('mailchimp_connected_id', 'FALSE'));
+  $config->set('connected_paths', update_variable_get('mailchimp_connected_paths', 'FALSE'));
+  $config->set('cron', update_variable_get('mailchimp_cron', 'FALSE'));
+  $config->set('batch_limit', update_variable_get('mailchimp_batch_limit', '100'));
+  $config->set('test_mode', update_variable_get('mailchimp_test_mode', 'novalue'));
+  update_variable_del('mailchimp_api_key');
+  update_variable_del('mailchimp_enable_connected');
+  update_variable_del('mailchimp_connected_id');
+  update_variable_del('mailchimp_connected_paths');
   update_variable_del('mailchimp_cron');
   update_variable_del('mailchimp_batch_limit');
   update_variable_del('mailchimp_test_mode');
-  update_variable_del('mailchimp_api_key');
 }
 
 /**
- * Implements hook_uninstall().
+ * Implements hook_install().
  */
-function mailchimp_uninstall() {
-  $queue = BackdropQueue::get(MAILCHIMP_QUEUE_CRON);
-  $queue->deleteQueue();
-  $queue = BackdropQueue::get(MAILCHIMP_BATCH_QUEUE_CRON);
-  $queue->deleteQueue();
+function mailchimp_install() {
+  // Dynamically generated variable data was detected.
 }

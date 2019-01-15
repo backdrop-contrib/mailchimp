@@ -54,7 +54,7 @@ function mailchimp_lists_overview_page() {
       array('!link' => l(t('MailChimp'), 'https://admin.mailchimp.com/lists/'))), 'warning');
   }
   else {
-    $options = t('Currently Available MailChimp lists').':<i>';
+    $options = t('Currently Available MailChimp lists') . ':<i>';
     foreach ($mc_lists as $mc_list) {
       $options .= ' ' . $mc_list->name . ',';
     }
@@ -130,9 +130,9 @@ function mailchimp_lists_webhook_form($form, &$form_state, $list_id, $action) {
     return confirm_form($form,
       t('Are you sure you want to &action webhooks for %name?',
         array(
-          '&action' => t($action),
-          '%name' => $list->name,
-        )),
+      '&action' => t($action),
+      '%name' => $list->name,
+    )),
       'admin/config/services/mailchimp/lists',
       t('You can change this setting back from the mailchimp administrative UI.'),
       $label
@@ -152,16 +152,16 @@ function mailchimp_lists_webhook_form_submit($form, &$form_state) {
         $list_id,
         mailchimp_webhook_url(),
         array(
-          'unsubscribe' => TRUE,
-          'profile' => TRUE,
-          'cleaned' => TRUE,
-          'upemail' => TRUE,
-        ),
+        'unsubscribe' => TRUE,
+        'profile' => TRUE,
+        'cleaned' => TRUE,
+        'upemail' => TRUE,
+      ),
         array(
-          'user' => TRUE,
-          'admin' => TRUE,
-          'api' => FALSE,
-        )
+        'user' => TRUE,
+        'admin' => TRUE,
+        'api' => FALSE,
+      )
       );
       break;
 
@@ -180,17 +180,17 @@ function mailchimp_lists_webhook_form_submit($form, &$form_state) {
   if ($result) {
     backdrop_set_message(t('Webhooks for list "%name" have been %action.',
       array(
-        '%name' => $form_state['list']->name,
-        '%action' => $form_state['action'] . 'd',
-      )
+      '%name' => $form_state['list']->name,
+      '%action' => $form_state['action'] . 'd',
+    )
     ));
   }
   else {
     backdrop_set_message(t('Unable to perform webhook action "%action" for list "%name".',
       array(
-        '%name' => $form_state['list']->name,
-        '%action' => $form_state['action'],
-      )
+      '%name' => $form_state['list']->name,
+      '%action' => $form_state['action'],
+    )
     ), 'warning');
 
   }
@@ -214,10 +214,10 @@ function mailchimp_lists_update_mergevars_form($form, &$form_state, $entity_type
     return confirm_form($form,
       t('Update Merge Fields on %list for all @entity_type -- @bundle entities?',
         array(
-          '%list' => $list->name,
-          '@entity_type' => $entity_type,
-          '@bundle' => $bundle_name,
-        )),
+      '%list' => $list->name,
+      '@entity_type' => $entity_type,
+      '@bundle' => $bundle_name,
+    )),
       'admin/config/services/mailchimp/lists',
       t('This can overwrite values configured directly on your MailChimp Account.'),
       "Update Merge Values"

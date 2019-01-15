@@ -10,11 +10,11 @@
    * Some text field manipulation code is adapted from
    * the Tokens module.
    */
-  Backdrop.behaviors.mailchimp_campaign_utils = {
+  Drupal.behaviors.mailchimp_campaign_utils = {
     attach: function(context, settings) {
       // Keep track of which textfield was last selected/focused.
       $('textarea', context).focus(function() {
-        Backdrop.settings.mailchimpCampaignFocusedField = this;
+        Drupal.settings.mailchimpCampaignFocusedField = this;
         console.log('Got text field focus: ' + $(this).attr('id'));
       });
 
@@ -29,7 +29,7 @@
         $('#' + section + '-entity-import-tag-field').hide();
 
         // Get the last selected text field.
-        var target_element = Backdrop.settings.mailchimpCampaignFocusedField;
+        var target_element = Drupal.settings.mailchimpCampaignFocusedField;
 
         // Get the selected entity ID.
         var entity_id = '';
@@ -42,7 +42,7 @@
         }
 
         if (entity_id.length == 0) {
-          alert(Backdrop.t('Select an entity to import before adding the token.'));
+          alert(Drupal.t('Select an entity to import before adding the token.'));
           return;
         }
 
@@ -60,7 +60,7 @@
         if (target_element) {
           console.log('Inserting token: ' + token);
 
-          Backdrop.behaviors.mailchimp_campaign_utils.addTokenToElement(target_element, token);
+          Drupal.behaviors.mailchimp_campaign_utils.addTokenToElement(target_element, token);
         }
         else {
           // Missing a selected text field. Insert token into token field,
@@ -70,7 +70,7 @@
         }
 
         // Unset last focused field.
-        Backdrop.settings.mailchimpCampaignFocusedField = null;
+        Drupal.settings.mailchimpCampaignFocusedField = null;
       });
 
       /**
@@ -78,7 +78,7 @@
        */
       $('.add-merge-var', context).unbind('click').bind('click', function() {
         // Get the last selected text field.
-        var target_element = Backdrop.settings.mailchimpCampaignFocusedField;
+        var target_element = Drupal.settings.mailchimpCampaignFocusedField;
 
         // Get the merge var.
         var element_id = $(this).attr('id');
@@ -89,11 +89,11 @@
         if (target_element) {
           console.log('Inserting token: ' + token);
 
-          Backdrop.behaviors.mailchimp_campaign_utils.addTokenToElement(target_element, token);
+          Drupal.behaviors.mailchimp_campaign_utils.addTokenToElement(target_element, token);
         }
 
         // Unset last focused field.
-        Backdrop.settings.mailchimpCampaignFocusedField = null;
+        Drupal.settings.mailchimpCampaignFocusedField = null;
       });
     },
 

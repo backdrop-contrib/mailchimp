@@ -9,12 +9,15 @@
  * Alter mergevars before they are sent to MailChimp.
  *
  * @param array $mergevars
+ *   Array of MailChimp mergevars.
  * @param object $entity
+ *   The entity used as a source for mergevar values.
  * @param string $entity_type
- *
- * @return NULL
+ *   The type of entity used as a source for mergevar values.
+ * @param string $list_id
+ *   The ID of the MailChimp list containing the mergevars.
  */
-function hook_mailchimp_lists_mergevars_alter(&$mergevars, $entity, $entity_type) {
+function hook_mailchimp_lists_mergevars_alter(&$mergevars, $entity, $entity_type, $list_id) {
 }
 
 /**
@@ -73,7 +76,7 @@ function hook_mailchimp_api_key_alter(&$api_key, $context) {
  * Alter the entity options list on the automations entity form.
  *
  * @param array $entity_type_options
- *   The full list of Backdrop entities.
+ *   The full list of Drupal entities.
  * @param string $automation_entity_label
  *   The label for the automation entity, if it exists.
  */

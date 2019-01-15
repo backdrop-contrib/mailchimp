@@ -3,8 +3,8 @@ description = Manage MailChimp signup blocks and pages.
 package = MailChimp
 backdrop = 1.x
 type = module
-
 dependencies[] = mailchimp
-dependencies[] = entity_ui
+dependencies[] = entity
 
 configure = admin/config/services/mailchimp/signup
+
