@@ -30,7 +30,7 @@ class MailchimpAutomationsEntity extends Entity {
     return array(
       'path' => 'admin/config/services/mailchimp/automations/manage/' . $this->name,
       'options' => array(
-        'entity_type' => $this->entityType,
+        'entity_type' => $this->entityType(),
         'entity' => $this,
       ),
     );

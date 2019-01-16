@@ -29,7 +29,7 @@ class MailchimpActivityEntity extends Entity {
     return array(
       'path' => 'admin/config/services/mailchimp/activity/manage/' . $this->name,
       'options' => array(
-        'entity_type' => $this->entityType,
+        'entity_type' => $this->entityType(),
         'entity' => $this,
       ),
     );
