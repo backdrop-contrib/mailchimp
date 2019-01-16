@@ -20,7 +20,7 @@ class MailChimpCampaign extends Entity {
    * Assemble html representation of the Campaign content.
    */
   public function buildContent($view_mode = 'full', $langcode = NULL) {
-    $build = parent::buildContent($view_mode, $langcode);
+    // $build = parent::buildContent($view_mode, $langcode);
 
     // Prepare rendered content:
     $content = mailchimp_campaign_render_template($this->template);
