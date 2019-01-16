@@ -413,7 +413,7 @@ function mailchimp_lists_get_subscribers($field, &$context) {
     $context['results']['subscribers'] = array();
     $context['sandbox']['progress'] = 0;
   }
-  $batch_size = config_get('mailchimp.settings', 'mailchimp_batch_limit');
+  $batch_size = config_get('mailchimp.settings', 'batch_limit');
   $options = array(
     'offset' => $context['sandbox']['progress'],
     'count' => $batch_size,
@@ -444,7 +444,7 @@ function mailchimp_lists_update_member_batch($entity_type, $bundle_name, $field,
     $context['results']['no_entity'] = 0;
   }
 
-  $batch_size = config_get('mailchimp.settings', 'mailchimp_batch_limit');
+  $batch_size = config_get('mailchimp.settings', 'batch_limit');
 
   // Query MailChimp for list subscribers in batches to limit resource usage.
   $options = array(
