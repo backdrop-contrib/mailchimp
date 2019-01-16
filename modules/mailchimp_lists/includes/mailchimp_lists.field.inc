@@ -591,7 +591,7 @@ function mailchimp_lists_form_field_ui_field_edit_form_alter(&$form, &$form_stat
  */
 function mailchimp_lists_form_field_ui_field_edit_form_validate(&$form, &$form_state) {
   if ($form['#field']['type'] == 'mailchimp_lists_subscription') {
-    if ($form_state['values']['field']['cardinality'] !== 1) {
+    if ($form_state['values']['field']['cardinality'] !== 'number' && $form_state['values']['field']['cardinality_number'] !== 1) {
       form_set_error('cardinality', t('Cardinality on MailChimp lists fields must be set to one.'));
     }
   }
