@@ -1,6 +1,6 @@
 {
-  "name": "drupal/mailchimp",
-  "description": "Mailchimp integration for Drupal.",
+  "name": "backdrop/mailchimp",
+  "description": "Mailchimp integration for Backdrop.",
   "homepage": "https://www.drupal.org/project/mailchimp",
   "license": "GNU-2.0+",
   "keywords": [

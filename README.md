@@ -36,10 +36,10 @@ Features
     any Entity with an email address.
 
 
-Upgrading from Drupal
+Upgrading from Backdrop
 --------------------------------------------------------------------------------
 
-  An upgrade path is provided from Drupal's version 7.x-4.7 and later. Please 
+  An upgrade path is provided from Backdrop's version 7.x-4.7 and later. Please 
   backup your database before attempting an upgrade.
 
 Installation Notes
@@ -154,7 +154,7 @@ This project is GPL v2 software. See the LICENSE.txt file in this directory for 
 Credits and maintainers
 --------------------------------------------------------------------------------
 
-The Drupal maintainers team https://www.drupal.org/project/mailchimp
+The Backdrop maintainers team https://www.drupal.org/project/mailchimp
 
 Ported to Backdrop by docwilmot https://github.com/docwilmot
 

@@ -4,7 +4,7 @@
  * Test class and methods for the Mailchimp Lists module.
  */
 
-class MailchimpListsTestCase extends DrupalWebTestCase {
+class MailchimpListsTestCase extends BackdropWebTestCase {
 
   /**
    * Returns info displayed in the test interface.
@@ -30,7 +30,7 @@ class MailchimpListsTestCase extends DrupalWebTestCase {
    */
   protected function setUp() {
     // Use a profile that contains required modules:
-    $prof = drupal_get_profile();
+    $prof = backdrop_get_profile();
     $this->profile = $prof;
     // Enable modules required for the test.
     $enabled_modules = array(

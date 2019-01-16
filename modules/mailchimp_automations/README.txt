@@ -1,4 +1,4 @@
-Integrate your Drupal entities with MailChimp's workflow automation endpoints.
+Integrate your Backdrop entities with MailChimp's workflow automation endpoints.
 
 ## Installation
 
@@ -9,7 +9,7 @@ Integrate your Drupal entities with MailChimp's workflow automation endpoints.
 
 1. Define which entity types you want to show campaign activity for at
 /admin/config/services/mailchimp/automations.
-  * Select a Drupal entity type.
+  * Select a Backdrop entity type.
   * Select a bundle.
   * Select the email entity property.
   * Select the appropriate MailChimp List
