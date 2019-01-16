@@ -13,7 +13,7 @@ function mailchimp_activity_entity_info() {
     'mailchimp_activity_entity' => array(
       'label' => t('MailChimp Activity Entity'),
       'plural label' => t('MailChimp Activity Entities'),
-      'controller class' => 'EntityAPIControllerExportable',
+      'controller class' => 'EntityPlusControllerExportable',
       'entity class' => 'MailchimpActivityEntity',
       'base table' => 'mailchimp_activity_entity',
       'uri callback' => 'entity_class_uri',
