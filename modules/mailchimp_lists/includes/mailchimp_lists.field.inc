@@ -606,7 +606,7 @@ function mailchimp_lists_subscription_property_info_callback(&$info, $entity_typ
 
   $property['type'] = 'mailchimp_lists_subscription';
   $property['getter callback'] = 'mailchimp_lists_field_get';
-  $property['setter callback'] = 'entity_metadata_field_verbatim_set';
+  $property['setter callback'] = 'entity_plus_metadata_field_verbatim_set';
 
   unset($property['query callback']);
 }
@@ -615,7 +615,7 @@ function mailchimp_lists_subscription_property_info_callback(&$info, $entity_typ
  * Entity field data callback for MailChimp subscription fields.
  */
 function mailchimp_lists_field_get($entity, array $options, $name, $entity_type, &$context) {
-  $verbatim = entity_metadata_field_verbatim_get($entity, $options, $name, $entity_type, $context);
+  $verbatim = entity_plus_metadata_field_verbatim_get($entity, $options, $name, $entity_type, $context);
   // If we're creating or updating field values they shouldn't be mucked with:
   if (isset($verbatim['subscribe'])) {
     return $verbatim;
