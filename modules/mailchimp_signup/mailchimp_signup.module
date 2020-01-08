@@ -172,7 +172,7 @@ function mailchimp_signup_entity_info() {
       'label' => t('MailChimp Signup'),
       'plural label' => t('MailChimp Signups'),
       'entity class' => 'MailchimpSignup',
-      'controller class' => 'EMWController',
+      'controller class' => 'EntityPlusController',
       'base table' => 'mailchimp_signup',
       'uri callback' => 'entity_class_uri',
       'fieldable' => FALSE,

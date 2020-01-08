@@ -13,7 +13,7 @@ function mailchimp_automations_entity_info() {
     'mailchimp_automations_entity' => array(
       'label' => t('MailChimp Automations Entity'),
       'plural label' => t('MailChimp Automations Entities'),
-      'controller class' => 'EMWController',
+      'controller class' => 'EntityPlusController',
       'entity class' => 'MailchimpAutomationsEntity',
       'base table' => 'mailchimp_automations_entity',
       'uri callback' => 'entity_class_uri',
