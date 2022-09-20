@@ -15,34 +15,6 @@ define('MAILCHIMP_STATUS_SCHEDULE', 'schedule');
 define('MAILCHIMP_STATUS_SENDING', 'sending');
 
 /**
- * Implements hook_libraries_info().
- */
-function mailchimp_libraries_info() {
-  $libraries['mailchimp'] = array(
-    'name' => 'MailChimp API',
-    'vendor url' => 'https://github.com/thinkshout/mailchimp-api-php',
-    'download url' => 'https://github.com/thinkshout/mailchimp-api-php/archive/v1.0.5.zip',
-    'version arguments' => array(
-      'file' => 'composer.json',
-      'pattern' => '/"version": "([0-9a-zA-Z.-]+)"/',
-    ),
-    'files' => array(
-      'php' => array(
-        'src/Mailchimp.php',
-        'src/MailchimpAPIException',
-        'src/MailchimpCampaigns.php',
-        'src/MailchimpLists.php',
-        'src/MailchimpReports.php',
-        'src/MailchimpTemplates.php',
-        'vendor/autoload.php',
-      ),
-    ),
-  );
-
-  return $libraries;
-}
-
-/**
  * Implements hook_menu().
  */
 function mailchimp_menu() {

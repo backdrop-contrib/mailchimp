@@ -39,7 +39,7 @@ Features
 Upgrading from Drupal
 --------------------------------------------------------------------------------
 
-  An upgrade path is provided from Drupal's version 7.x-4.7 and later. Please 
+  An upgrade path is provided from Drupal's version 7.x-4.7 and later. Please
   backup your database before attempting an upgrade.
 
 Installation Notes
@@ -50,57 +50,6 @@ Installation Notes
     mailchimp_lists module.
   * If you use a drush make workflow, see the example drush makefile:
     mailchimp.make.example.
-  * The MailChimp PHP library must exist in your Backdrop installation.
-
-MailChimp Library Installation
---------------------------------------------------------------------------------
-
-    If you are using Libraries module for MailChimp version 7.x-4.x:
-
-    The library has dependencies managed by Composer. If you would prefer
-    not to use Composer, you can download the pre-built library package:
-    https://github.com/thinkshout/mailchimp-api-php/releases/download/v1.0.5/v1.0.5-package.zip
-
-    To use Composer:
-
-      - Download Composer if you don't already have it installed:
-        https://getcomposer.org/download/
-
-      - Download the most recent release of the v3 API library:
-        https://github.com/thinkshout/mailchimp-api-php/releases
-
-      - Extract the library archive to libraries/mailchimp
-
-      - Ensure the directory structure looks like this:
-
-        - libraries/
-          - mailchimp/
-            - src/
-              - Mailchimp.php
-              - MailchimpAPIException.php
-              - MailchimpCampaigns.php
-              - MailchimpLists.php
-              - MailchimpReports.php
-              - MailchimpTemplates.php
-            - composer.json
-            - README.md
-
-      - In the mailchimp library directory, run:
-        composer install
-
-    If you are using Composer Manager for MailChimp version 7.x-4.x:
-
-      - Download Composer if you don't already have it installed:
-        https://getcomposer.org/download/
-
-      - Download and install the Composer Manager module:
-        https://www.drupal.org/project/composer_manager
-
-      - Install Drush on your system if you haven't already:
-        http://www.drush.org/en/master/
-
-      - Run Composer manager with Drush within your Backdrop installation:
-        drush composer-manager update --no-dev
 
 Configuration
 --------------------------------------------------------------------------------
