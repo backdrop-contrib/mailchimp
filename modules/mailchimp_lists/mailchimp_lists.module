@@ -581,9 +581,9 @@ function mailchimp_lists_fieldmap_options($entity_type, $entity_bundle = NULL, $
     $options[''] = t('-- Select --');
   }
 
-  $properties = entity_get_all_property_info($entity_type);
+  $properties = entity_plus_get_all_property_info($entity_type);
   if (isset($entity_bundle)) {
-    $info = entity_get_property_info($entity_type);
+    $info = entity_plus_get_property_info($entity_type);
     $properties = $info['properties'];
     if (isset($info['bundles'][$entity_bundle])) {
       $properties += $info['bundles'][$entity_bundle]['properties'];
@@ -597,7 +597,7 @@ function mailchimp_lists_fieldmap_options($entity_type, $entity_bundle = NULL, $
     // Include the entity type at the beginning of token names since tokens use
     // the format [entity_type:entity_property].
     $keypath = $prefix ? $prefix . ':' . $key : $entity_type . ':' . $key;
-    $type = isset($property['type']) ? entity_property_extract_innermost_type($property['type']) : 'text';
+    $type = isset($property['type']) ? entity_plus_property_extract_innermost_type($property['type']) : 'text';
     $is_entity = ($type == 'entity') || (bool) entity_get_info($type);
     $required_property = isset($property['required']) ? $property['required'] : FALSE;
     $computed_property = isset($property['computed']) ? $property['computed'] : FALSE;

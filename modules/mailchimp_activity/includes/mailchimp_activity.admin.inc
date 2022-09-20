@@ -205,9 +205,9 @@ function mailchimp_activity_entity_form_submit($form, &$form_state) {
 function mailchimp_activity_email_fieldmap_options($entity_type, $entity_bundle = NULL) {
   $options = array('' => t('-- Select --'));
 
-  $properties = entity_get_all_property_info($entity_type);
+  $properties = entity_plus_get_all_property_info($entity_type);
   if (isset($entity_bundle)) {
-    $info = entity_get_property_info($entity_type);
+    $info = entity_plus_get_property_info($entity_type);
     $properties = $info['properties'];
     if (isset($info['bundles'][$entity_bundle])) {
       $properties += $info['bundles'][$entity_bundle]['properties'];
@@ -215,7 +215,7 @@ function mailchimp_activity_email_fieldmap_options($entity_type, $entity_bundle 
   }
 
   foreach ($properties as $key => $property) {
-    $type = isset($property['type']) ? entity_property_extract_innermost_type($property['type']) : 'text';
+    $type = isset($property['type']) ? entity_plus_property_extract_innermost_type($property['type']) : 'text';
     $is_entity = ($type == 'entity') || (bool) entity_get_info($type);
     // Leave entities out of this.
     if (!$is_entity) {

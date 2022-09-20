@@ -102,7 +102,7 @@ function mailchimp_activity_load_entities($name = NULL) {
   if (!isset($info['entity keys']['name'])) {
     return $entities;
   }
-  $types = entity_key_array_by_property($entities, $info['entity keys']['name']);
+  $types = entity_plus_key_array_by_property($entities, $info['entity keys']['name']);
   return isset($name) ? reset($types) : $types;
 }
 
