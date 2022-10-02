@@ -18,7 +18,7 @@ function mailchimp_schema() {
 /**
  * Implements hook_requirements().
  */
-function mailchimp_requirements($phase) {
+/* function mailchimp_requirements($phase) {
   $requirements = array();
   // Ensure translations don't break at install time:
   $t = get_t();
@@ -64,7 +64,7 @@ function mailchimp_requirements($phase) {
 
   return $requirements;
 }
-
+ */
 /**
  * Implements hook_update_N().
  */

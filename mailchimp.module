@@ -14,32 +14,30 @@ define('MAILCHIMP_STATUS_PAUSED', 'paused');
 define('MAILCHIMP_STATUS_SCHEDULE', 'schedule');
 define('MAILCHIMP_STATUS_SENDING', 'sending');
 
+
 /**
  * Implements hook_libraries_info().
  */
-function mailchimp_libraries_info() {
-  $libraries['mailchimp'] = array(
-    'name' => 'MailChimp API',
-    'vendor url' => 'https://github.com/thinkshout/mailchimp-api-php',
-    'download url' => 'https://github.com/thinkshout/mailchimp-api-php/archive/v1.0.5.zip',
-    'version arguments' => array(
-      'file' => 'composer.json',
-      'pattern' => '/"version": "([0-9a-zA-Z.-]+)"/',
-    ),
-    'files' => array(
-      'php' => array(
-        'src/Mailchimp.php',
-        'src/MailchimpAPIException',
-        'src/MailchimpCampaigns.php',
-        'src/MailchimpLists.php',
-        'src/MailchimpReports.php',
-        'src/MailchimpTemplates.php',
-        'vendor/autoload.php',
-      ),
-    ),
+function mailchimp_get_libraries() {
+  $path = backdrop_get_path('module', 'mailchimp') . '/';
+  $files = array(
+    'guzzle/autoloader.php',
+    'Mailchimp/Mailchimp.php',
+    'Mailchimp/MailchimpAPIException.php',
+    'Mailchimp/MailchimpCampaigns.php',
+    'Mailchimp/MailchimpAutomations.php',
+    'Mailchimp/MailchimpCURLClient.php',
+    'Mailchimp/MailchimpEcommerce.php',
+    'Mailchimp/MailchimpLists.php',
+    'Mailchimp/MailchimpReports.php',
+    'Mailchimp/MailchimpTemplates.php',
   );
 
-  return $libraries;
+  foreach ($files as $file) {
+    require_once($path . $file);
+  }
+
+  return TRUE;
 }
 
 /**
@@ -129,13 +127,10 @@ function mailchimp_get_api_object($classname = 'Mailchimp', $api_key = NULL) {
   if (!$api_key && isset($mailchimp) && $mailchimp instanceof $classname) {
     return $mailchimp;
   }
-  if (module_exists('libraries')) {
-    $library = libraries_load('mailchimp');
-  }
-  else {
-    $library = FALSE;
-  }
-  if (!$library['installed'] && !class_exists('Mailchimp\Mailchimp')) {
+
+  $library = mailchimp_get_libraries();
+
+  if (!$library && !class_exists('Mailchimp\Mailchimp')) {
     $msg = t('Failed to load MailChimp PHP library. Please refer to the installation requirements.');
     watchdog('mailchimp', $msg, array(), WATCHDOG_ERROR);
     backdrop_set_message($msg, 'error', FALSE);
@@ -1623,15 +1618,6 @@ function mailchimp_mergevars_populate($mergefields, $entity, $entity_type) {
   }
 
   return $mergevars[$bundle . ':' . $id];
-}
-
-/**
-* Implements hook_autoload_info().
-*/
-function mailchimp_autoload_info() {
-  return array(
-  'MailchimpException' => 'includes/mailchimp_exception.inc',
-  );
 }
 
 /**
